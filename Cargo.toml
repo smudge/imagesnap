@@ -1,0 +1,16 @@
+[package]
+name = "imagesnap"
+version = "0.0.1"
+authors = ["smudge <nathan@ngriffith.com>"]
+edition = "2018"
+categories = ["command-line-utilities", "os::macos-apis"]
+description = "A CLI for capturing images 📷 📸 🖼️"
+repository = "https://github.com/smudge/imagesnap"
+readme = "README.md"
+license = "MIT"
+
+[dependencies]
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc = "0.2"
+objc-foundation = "0.1"
