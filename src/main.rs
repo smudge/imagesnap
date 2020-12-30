@@ -1,6 +1,7 @@
 extern crate getopts;
 
 use getopts::Options;
+use imagesnap::Snap;
 use std::env::args;
 
 fn main() {
@@ -38,9 +39,11 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
     } else {
         "DEFAULT DEVICE".to_string()
     };
-    let input = if matches.free.is_empty() {
+    let filename = if matches.free.is_empty() {
         "snapshot.jpg".to_string()
     } else {
         matches.free[0].clone()
     };
+
+    Snap::new(device, filename).create().unwrap()
 }
