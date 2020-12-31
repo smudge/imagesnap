@@ -37,7 +37,7 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
     let device = if matches.opt_present("d") {
         matches.opt_str("d").unwrap()
     } else {
-        "DEFAULT DEVICE".to_string()
+        Snap::default_device()
     };
     let filename = if matches.free.is_empty() {
         "snapshot.jpg".to_string()

@@ -1,7 +1,7 @@
 extern crate objc;
 use objc::runtime::*;
 use objc::{class, msg_send, sel, sel_impl};
-use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSObject, NSString};
+use objc_foundation::{INSArray, INSString, NSArray, NSObject, NSString};
 use objc_id::{Id, Owned};
 use std::os::raw::c_int;
 
@@ -16,7 +16,7 @@ extern "C" {
 pub struct Client {}
 
 impl Client {
-    pub fn default_device() {
+    pub fn default_device() -> String {
         let av_capture_device = class!(AVCaptureDevice);
         let device: *mut Object = unsafe {
             msg_send![
@@ -25,7 +25,7 @@ impl Client {
             ]
         };
         let name: *mut NSString = unsafe { msg_send![device, localizedName] };
-        println!("DEVICE: {:#?}", unsafe { name.as_ref().unwrap().as_str() });
+        unsafe { name.as_ref() }.unwrap().as_str().to_string()
     }
 
     pub fn list_devices() {

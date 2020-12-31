@@ -23,7 +23,7 @@ impl Snap {
         os::Client::list_devices()
     }
 
-    pub fn default_device() {
+    pub fn default_device() -> String {
         os::Client::default_device()
     }
 }
