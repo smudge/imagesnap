@@ -19,6 +19,10 @@ impl Snap {
         Ok(())
     }
 
+    pub fn list_devices() {
+        os::Client::list_devices()
+    }
+
     pub fn default_device() {
         os::Client::default_device()
     }

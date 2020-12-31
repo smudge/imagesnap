@@ -15,3 +15,4 @@ getopts = "0.2"
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
 objc-foundation = "0.1"
+objc_id = "0.1"
