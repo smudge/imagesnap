@@ -1,4 +1,5 @@
 extern crate objc;
+use objc::declare::ClassDecl;
 use objc::runtime::*;
 use objc::{class, msg_send, sel, sel_impl};
 use objc_foundation::{INSArray, INSString, NSArray, NSObject, NSString};
@@ -16,15 +17,18 @@ extern "C" {
 pub struct Client {}
 
 impl Client {
-    pub fn default_device() -> String {
+    pub fn default_input() -> *mut Object {
         let av_capture_device = class!(AVCaptureDevice);
-        let device: *mut Object = unsafe {
+        unsafe {
             msg_send![
                 av_capture_device,
                 defaultDeviceWithMediaType: AVMediaTypeVideo
             ]
-        };
-        let name: *mut NSString = unsafe { msg_send![device, localizedName] };
+        }
+    }
+
+    pub fn default_device() -> String {
+        let name: *mut NSString = unsafe { msg_send![Client::default_input(), localizedName] };
         unsafe { name.as_ref() }.unwrap().as_str().to_string()
     }
 
@@ -47,5 +51,56 @@ impl Client {
             let name: *mut NSString = unsafe { msg_send![*device, localizedName] };
             println!("{}", unsafe { name.as_ref().unwrap().as_str() });
         }
+    }
+
+    pub fn capture() {
+        let avcpo = class!(AVCapturePhotoOutput);
+        let avcpo: *mut Object = unsafe { msg_send![avcpo, alloc] };
+        let avcpo: *mut Object = unsafe { msg_send![avcpo, init] };
+
+        let avcps = class!(AVCapturePhotoSettings);
+        let avcps: *mut Object = unsafe { msg_send![avcps, photoSettings] };
+
+        let session = class!(AVCaptureSession);
+        let session: *mut Object = unsafe { msg_send![session, alloc] };
+        let session: *mut Object = unsafe { msg_send![session, init] };
+
+        let device: *mut Object = Client::default_input();
+        let input = class!(AVCaptureDeviceInput);
+        let null: *const i32 = std::ptr::null();
+        let input: *mut Object =
+            unsafe { msg_send![input, deviceInputWithDevice: device error: null] };
+
+        unsafe { msg_send![session, addInput: input] }
+        unsafe { msg_send![session, addOutput: avcpo] }
+        unsafe { msg_send![session, startRunning] }
+
+        let superclass = class!(NSObject);
+        let mut delegate = ClassDecl::new("CaptureDelegate", superclass).unwrap();
+
+        extern "C" fn capture_output_fn(
+            _this: &mut Object,
+            _cmd: Sel,
+            capture_output: *mut Object,
+            did_finish_processing_photo: *mut Object,
+            error: *mut Object,
+        ) {
+            println!("capture_output: {:?}", capture_output);
+            println!("did_finish: {:?}", did_finish_processing_photo);
+            println!("error: {:?}", error);
+        }
+        let capture_output: extern "C" fn(&mut Object, Sel, *mut Object, *mut Object, *mut Object) =
+            capture_output_fn;
+        unsafe {
+            delegate.add_method(
+                sel!(captureOutput:didFinishProcessingPhoto:error:),
+                capture_output,
+            );
+        }
+        let delegate = delegate.register();
+        let delegate: *mut Object = unsafe { msg_send![delegate, alloc] };
+        let delegate: *mut Object = unsafe { msg_send![delegate, init] };
+
+        unsafe { msg_send![avcpo, capturePhotoWithSettings: avcps delegate: delegate] }
     }
 }

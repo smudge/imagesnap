@@ -16,6 +16,7 @@ impl Snap {
             "Capturing image from device \"{}\"..................{}",
             self.device, self.filename
         );
+        os::Client::capture();
         Ok(())
     }
 
