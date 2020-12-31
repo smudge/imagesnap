@@ -31,7 +31,7 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
         return;
     }
     if matches.opt_present("l") {
-        println!("PRINT DEVICES");
+        Snap::default_device();
         return;
     }
     let device = if matches.opt_present("d") {

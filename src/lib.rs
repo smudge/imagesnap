@@ -18,4 +18,8 @@ impl Snap {
         );
         Ok(())
     }
+
+    pub fn default_device() {
+        os::Client::default_device()
+    }
 }
