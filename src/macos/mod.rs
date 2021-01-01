@@ -71,23 +71,34 @@ impl Client {
         let input: *mut Object =
             unsafe { msg_send![input, deviceInputWithDevice: device error: null] };
 
-        unsafe { msg_send![session, addInput: input] }
-        unsafe { msg_send![session, addOutput: avcpo] }
-        unsafe { msg_send![session, startRunning] }
-
         let superclass = class!(NSObject);
         let mut delegate = ClassDecl::new("CaptureDelegate", superclass).unwrap();
+        // delegate.add_protocol(Protocol::get("AVCapturePhotoCaptureDelegate").unwrap());
+
+        delegate.add_ivar::<BOOL>("_ready");
+        delegate.add_ivar::<*mut Object>("_photo");
+        extern "C" fn ready_fn(this: &mut Object, _cmd: Sel) -> BOOL {
+            unsafe { *this.get_ivar("_ready") }
+        }
+        extern "C" fn get_photo_fn(this: &mut Object, _cmd: Sel) -> *mut Object {
+            unsafe { *this.get_ivar("_photo") }
+        }
+        let is_ready: extern "C" fn(&mut Object, Sel) -> BOOL = ready_fn;
+        let get_photo: extern "C" fn(&mut Object, Sel) -> *mut Object = get_photo_fn;
+        unsafe {
+            delegate.add_method(sel!(isReady), is_ready);
+            delegate.add_method(sel!(getPhoto), get_photo);
+        }
 
         extern "C" fn capture_output_fn(
-            _this: &mut Object,
+            this: &mut Object,
             _cmd: Sel,
-            capture_output: *mut Object,
-            did_finish_processing_photo: *mut Object,
-            error: *mut Object,
-        ) {
-            println!("capture_output: {:?}", capture_output);
-            println!("did_finish: {:?}", did_finish_processing_photo);
-            println!("error: {:?}", error);
+            _capture_output: *mut Object,
+            photo: *mut Object,
+            _error: *mut Object,
+        ) -> () {
+            unsafe { this.set_ivar("_photo", photo) }
+            unsafe { this.set_ivar("_ready", YES) }
         }
         let capture_output: extern "C" fn(&mut Object, Sel, *mut Object, *mut Object, *mut Object) =
             capture_output_fn;
@@ -101,6 +112,30 @@ impl Client {
         let delegate: *mut Object = unsafe { msg_send![delegate, alloc] };
         let delegate: *mut Object = unsafe { msg_send![delegate, init] };
 
+        unsafe { msg_send![session, addInput: input] }
+        unsafe { msg_send![session, addOutput: avcpo] }
+        unsafe { msg_send![session, startRunning] }
+
+        let is_ready: BOOL = unsafe { msg_send![session, isRunning] };
+        println!("ready: {}", is_ready);
+
+        println!("calling");
         unsafe { msg_send![avcpo, capturePhotoWithSettings: avcps delegate: delegate] }
+        println!("called");
+
+        let interrupted: BOOL = unsafe { msg_send![session, isInterrupted] };
+        println!("interrupted: {}", interrupted);
+
+        let photo: *mut Object = unsafe { msg_send![delegate, getPhoto] };
+        let mut is_ready: BOOL = unsafe { msg_send![photo, isReady] };
+        while is_ready == NO {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            is_ready = unsafe { msg_send![photo, isReady] };
+        }
+        unsafe { msg_send![session, stopRunning] }
+
+        //let data: *mut Object = unsafe { msg_send![photo, fileDataRepresentation] };
+        //let length: u32 = unsafe { msg_send![data, length] };
+        //println!("length: {}", length);
     }
 }
