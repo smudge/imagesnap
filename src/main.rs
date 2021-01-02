@@ -16,44 +16,44 @@ fn main() {
 
     match opts.parse(&args[1..]) {
         Ok(m) => handle_args(&args[0], opts, m),
-        Err(_) => print_usage(&args[0], opts),
+        Err(_) => print_usage(&args[0], opts, 1),
     };
 }
 
-fn print_usage(program: &String, opts: Options) {
+fn print_usage(program: &String, opts: Options, code: i32) {
     println!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     println!("  {}\n", env!("CARGO_PKG_DESCRIPTION"));
-    let brief = format!("Usage:\n  {} [<options>] [OUTPUT.(jpg|png|tif)]", program);
-    print!("{}", opts.usage(&brief));
+    opts.usage(&format!(
+        "Usage:\n  {} [<options>] [OUTPUT.(jpg|png|tif)]",
+        program
+    ));
+    std::process::exit(code);
 }
 
 fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
-    if matches.opt_present("h") {
-        print_usage(&program, opts);
-        return;
-    }
-    if matches.opt_present("l") {
-        Snap::list_devices();
-        return;
-    }
-    let device = if matches.opt_present("d") {
-        matches.opt_str("d").unwrap()
-    } else {
-        Snap::default_device()
+    let device = match matches.opt_str("d") {
+        Some(val) => val,
+        None => Snap::default_device(),
     };
     let verbose = !matches.opt_present("q");
-    let warmup = if matches.opt_present("w") {
-        matches.opt_str("w").unwrap().parse().unwrap()
-    } else {
-        0.0
-    };
-    let filename = if matches.free.is_empty() {
-        "snapshot.jpg".to_string()
-    } else {
-        matches.free[0].clone()
+    let warmup = match matches.opt_str("w") {
+        Some(val) => val.parse().unwrap(),
+        None => 0.0,
     };
 
-    Snap::new(device, filename, verbose, warmup)
-        .create()
-        .unwrap()
+    match (
+        &matches.free[..],
+        matches.opt_present("l"),
+        matches.opt_present("h"),
+    ) {
+        ([], false, false) => Snap::new(device, "snapshot.jpg".to_string(), verbose, warmup)
+            .create()
+            .unwrap(),
+        ([filename], false, false) => Snap::new(device, filename.clone(), verbose, warmup)
+            .create()
+            .unwrap(),
+        ([], true, false) => Snap::list_devices(),
+        ([], false, true) => print_usage(&program, opts, 0),
+        (_, _, _) => print_usage(&program, opts, 1),
+    }
 }
