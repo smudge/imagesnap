@@ -42,16 +42,16 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
         matches.opt_present("l"),
         matches.opt_present("h"),
         !matches.opt_present("q"),
-        matches.opt_str("w").map(|s| s.parse().unwrap()),
+        matches.opt_str("w").map(|s| s.parse()).transpose(),
         matches.opt_str("d"),
     ) {
-        (Ok(filename), false, false, verbose, warmup, device) => {
+        (Ok(filename), false, false, verbose, Ok(warmup), device) => {
             Snap::new(device, filename, verbose, warmup)
                 .create()
                 .unwrap()
         }
-        (Ok(_), true, false, _, _, _) => Snap::list_devices(),
-        (Ok(_), false, true, _, _, _) => print_usage(&program, opts, 0),
+        (Ok(_), true, false, _, Ok(_), _) => Snap::list_devices(),
+        (Ok(_), false, true, _, Ok(_), _) => print_usage(&program, opts, 0),
         (_, _, _, _, _, _) => print_usage(&program, opts, 1),
     }
 }
