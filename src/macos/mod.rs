@@ -60,7 +60,7 @@ impl Client {
         }
     }
 
-    pub fn capture() {
+    pub fn capture(filename: String) {
         let protocol = Protocol::get("AVCapturePhotoCaptureDelegate");
 
         let avcps = class!(AVCapturePhotoSettings);
@@ -169,7 +169,7 @@ impl Client {
                         let image_data: *mut NSData = unsafe {
                             msg_send![av_capture_class, jpegStillImageNSDataRepresentation: photo]
                         };
-                        let filename = NSString::from_str("snapshot.jpg");
+                        let filename = NSString::from_str(&filename);
                         unsafe { msg_send![image_data, writeToFile:filename atomically:YES] }
                         tx.send("success").unwrap();
                     });
