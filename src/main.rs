@@ -40,22 +40,21 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
         [filename] => Ok(Some(filename.clone())),
         _ => Err(()),
     };
-    let warmup = match matches.opt_str("w") {
-        Some(val) => Some(val.parse().unwrap()),
-        None => None,
-    };
 
     match (
         filename,
         matches.opt_present("l"),
         matches.opt_present("h"),
         !matches.opt_present("q"),
+        matches.opt_str("w").map(|s| s.parse().unwrap()),
     ) {
-        (Ok(filename), false, false, verbose) => Snap::new(device, filename, verbose, warmup)
-            .create()
-            .unwrap(),
-        (Ok(_), true, false, _) => Snap::list_devices(),
-        (Ok(_), false, true, _) => print_usage(&program, opts, 0),
-        (_, _, _, _) => print_usage(&program, opts, 1),
+        (Ok(filename), false, false, verbose, warmup) => {
+            Snap::new(device, filename, verbose, warmup)
+                .create()
+                .unwrap()
+        }
+        (Ok(_), true, false, _, _) => Snap::list_devices(),
+        (Ok(_), false, true, _, _) => print_usage(&program, opts, 0),
+        (_, _, _, _, _) => print_usage(&program, opts, 1),
     }
 }
