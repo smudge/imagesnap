@@ -9,7 +9,14 @@ pub struct Snap {
 }
 
 impl Snap {
-    pub fn new(device: String, filename: String, verbose: bool, warmup: f32) -> Snap {
+    pub fn new(
+        device: String,
+        filename: Option<String>,
+        verbose: bool,
+        warmup: Option<f32>,
+    ) -> Snap {
+        let filename = filename.unwrap_or("snapshot.jpg".to_string());
+        let warmup = warmup.unwrap_or(0.0);
         Snap {
             device,
             filename,

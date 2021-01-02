@@ -35,25 +35,27 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
         Some(val) => val,
         None => Snap::default_device(),
     };
-    let verbose = !matches.opt_present("q");
+    let filename: Result<Option<String>, ()> = match &matches.free[..] {
+        [] => Ok(None),
+        [filename] => Ok(Some(filename.clone())),
+        _ => Err(()),
+    };
     let warmup = match matches.opt_str("w") {
-        Some(val) => val.parse().unwrap(),
-        None => 0.0,
+        Some(val) => Some(val.parse().unwrap()),
+        None => None,
     };
 
     match (
-        &matches.free[..],
+        filename,
         matches.opt_present("l"),
         matches.opt_present("h"),
+        !matches.opt_present("q"),
     ) {
-        ([], false, false) => Snap::new(device, "snapshot.jpg".to_string(), verbose, warmup)
+        (Ok(filename), false, false, verbose) => Snap::new(device, filename, verbose, warmup)
             .create()
             .unwrap(),
-        ([filename], false, false) => Snap::new(device, filename.clone(), verbose, warmup)
-            .create()
-            .unwrap(),
-        ([], true, false) => Snap::list_devices(),
-        ([], false, true) => print_usage(&program, opts, 0),
-        (_, _, _) => print_usage(&program, opts, 1),
+        (Ok(_), true, false, _) => Snap::list_devices(),
+        (Ok(_), false, true, _) => print_usage(&program, opts, 0),
+        (_, _, _, _) => print_usage(&program, opts, 1),
     }
 }
