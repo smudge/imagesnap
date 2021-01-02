@@ -150,8 +150,8 @@ impl Client {
                 print!("\rphoto ready!       \n");
             }
             None => {
-                let avcsio = class!(AVCaptureStillImageOutput);
-                let avcsio: *mut Object = unsafe { msg_send![avcsio, new] };
+                let av_capture_class = class!(AVCaptureStillImageOutput);
+                let avcsio: *mut Object = unsafe { msg_send![av_capture_class, new] };
 
                 let settings = unsafe {
                     NSDictionary::from_keys_and_objects(
@@ -166,22 +166,23 @@ impl Client {
                 let (tx, rx) = std::sync::mpsc::channel();
                 let handler =
                     ConcreteBlock::new(move |photo: *const Object, _error: *const Object| {
-                        println!("photo: {:?}", photo);
-                        tx.send(photo).unwrap();
+                        let image_data: *mut NSData = unsafe {
+                            msg_send![av_capture_class, jpegStillImageNSDataRepresentation: photo]
+                        };
+                        let filename = NSString::from_str("snapshot.jpg");
+                        unsafe { msg_send![image_data, writeToFile:filename atomically:YES] }
+                        tx.send("success").unwrap();
                     });
 
                 let connections: *mut Object = unsafe { msg_send![avcsio, connections] };
                 let connection: *mut Object = unsafe { msg_send![connections, firstObject] };
-
-                let is_active: BOOL = unsafe { msg_send![connection, isActive] };
-                println!("is active: {:?}", is_active);
 
                 unsafe { msg_send![session, startRunning] }
                 unsafe {
                     msg_send![avcsio, captureStillImageAsynchronouslyFromConnection:connection completionHandler:handler.copy()]
                 }
 
-                println!("photo: {:?}", rx.recv().unwrap());
+                println!("{}", rx.recv().unwrap());
             }
         }
         unsafe { msg_send![session, stopRunning] }
