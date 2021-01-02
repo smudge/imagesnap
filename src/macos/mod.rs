@@ -60,7 +60,7 @@ impl Client {
         }
     }
 
-    pub fn capture(filename: String) {
+    pub fn capture(filename: String, warmup: f32) {
         let protocol = Protocol::get("AVCapturePhotoCaptureDelegate");
 
         let avcps = class!(AVCapturePhotoSettings);
@@ -178,18 +178,13 @@ impl Client {
                 let connection: *mut Object = unsafe { msg_send![connections, firstObject] };
 
                 unsafe { msg_send![session, startRunning] }
+                std::thread::sleep(std::time::Duration::from_secs_f32(warmup));
                 unsafe {
                     msg_send![avcsio, captureStillImageAsynchronouslyFromConnection:connection completionHandler:handler.copy()]
                 }
-
-                println!("{}", rx.recv().unwrap());
+                rx.recv().unwrap();
             }
         }
         unsafe { msg_send![session, stopRunning] }
-
-        // let photo: *mut Object = unsafe { msg_send![delegate, getPhoto] };
-        //let data: *mut Object = unsafe { msg_send![photo, fileDataRepresentation] };
-        //let length: u32 = unsafe { msg_send![data, length] };
-        //println!("length: {}", length);
     }
 }

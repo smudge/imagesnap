@@ -8,6 +8,8 @@ fn main() {
     let args: Vec<String> = args().collect();
 
     let mut opts = Options::new();
+    opts.optflag("q", "quiet", "Do not output any text");
+    opts.optopt("w", "warmup", "Warm up camera for x.xx seconds", "x.xx");
     opts.optflag("l", "list", "List available capture devices");
     opts.optopt("d", "device", "Use specific capture device", "NAME");
     opts.optflag("h", "help", "This help message");
@@ -39,11 +41,19 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
     } else {
         Snap::default_device()
     };
+    let verbose = !matches.opt_present("q");
+    let warmup = if matches.opt_present("w") {
+        matches.opt_str("w").unwrap().parse().unwrap()
+    } else {
+        0.0
+    };
     let filename = if matches.free.is_empty() {
         "snapshot.jpg".to_string()
     } else {
         matches.free[0].clone()
     };
 
-    Snap::new(device, filename).create().unwrap()
+    Snap::new(device, filename, verbose, warmup)
+        .create()
+        .unwrap()
 }

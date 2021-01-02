@@ -4,19 +4,28 @@ mod os;
 pub struct Snap {
     device: String,
     filename: String,
+    verbose: bool,
+    warmup: f32,
 }
 
 impl Snap {
-    pub fn new(device: String, filename: String) -> Snap {
-        Snap { device, filename }
+    pub fn new(device: String, filename: String, verbose: bool, warmup: f32) -> Snap {
+        Snap {
+            device,
+            filename,
+            verbose,
+            warmup,
+        }
     }
 
     pub fn create(&self) -> Result<(), String> {
-        println!(
-            "Capturing image from device \"{}\"..................{}",
-            self.device, self.filename
-        );
-        os::Client::capture(self.filename.clone());
+        if self.verbose {
+            println!(
+                "Capturing image from device \"{}\"..................{}",
+                self.device, self.filename
+            );
+        }
+        os::Client::capture(self.filename.clone(), self.warmup);
         Ok(())
     }
 
