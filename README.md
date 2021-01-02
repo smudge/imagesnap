@@ -65,10 +65,15 @@ imagesnap = "0.0.1"
 
 ## Todo:
 
-- [ ] Basic functionality working.
-- [ ] Update README with library usage.
-- [ ] Get device selection working.
-- [ ] Get STDOUT and pipe detection working.
+- [X] Basic functionality working (snap image to file)
+- [X] Add additional opts like 'quiet' and 'warmup'
+- [ ] Get device selection working
+- [ ] Clean up code, work on generic lib interface
+- [ ] Update README with library usage
+- [ ] Support additional file types? (png, tif, etc?)
+- [ ] Add Linux support (via `rscam`)
+- [ ] Add Windows support (via `escapi`)
+- [ ] Get STDOUT and pipe detection working (macOS/linux)
 
 ## Thanks To:
 
