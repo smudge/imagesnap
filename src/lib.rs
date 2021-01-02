@@ -10,11 +10,12 @@ pub struct Snap {
 
 impl Snap {
     pub fn new(
-        device: String,
+        device: Option<String>,
         filename: Option<String>,
         verbose: bool,
         warmup: Option<f32>,
     ) -> Snap {
+        let device = device.unwrap_or(Snap::default_device());
         let filename = filename.unwrap_or("snapshot.jpg".to_string());
         let warmup = warmup.unwrap_or(0.0);
         Snap {
