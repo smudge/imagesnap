@@ -23,10 +23,8 @@ fn main() {
 fn print_usage(program: &String, opts: Options, code: i32) {
     println!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     println!("  {}\n", env!("CARGO_PKG_DESCRIPTION"));
-    opts.usage(&format!(
-        "Usage:\n  {} [<options>] [OUTPUT.(jpg|png|tif)]",
-        program
-    ));
+    print!("Usage:\n  {} [<options>] [OUTPUT.(jpg|png|tif)]", program);
+    print!("{}", opts.usage(""));
     std::process::exit(code);
 }
 
