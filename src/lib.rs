@@ -1,24 +1,24 @@
 #[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
 mod os;
 
-pub struct Snap {
+pub struct Camera {
     device: String,
     verbose: bool,
     warmup: f32,
 }
 
-impl Snap {
-    pub fn new(device: Option<String>, verbose: bool, warmup: Option<f32>) -> Snap {
-        let device = device.unwrap_or(Snap::default_device());
+impl Camera {
+    pub fn new(device: Option<String>, verbose: bool, warmup: Option<f32>) -> Camera {
+        let device = device.unwrap_or(Camera::default_device());
         let warmup = warmup.unwrap_or(0.5);
-        Snap {
+        Camera {
             device,
             verbose,
             warmup,
         }
     }
 
-    pub fn create(&self, filename: String) -> Result<(), String> {
+    pub fn snap(&self, filename: String) -> Result<(), String> {
         if self.verbose {
             println!(
                 "Capturing image from device \"{}\"..................{}",
