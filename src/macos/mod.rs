@@ -39,7 +39,7 @@ impl Client {
         unsafe { name.as_ref() }.unwrap().as_str().to_string()
     }
 
-    pub fn list_devices() {
+    pub fn list_devices() -> Result<(), String> {
         let discovery_session = class!(AVCaptureDeviceDiscoverySession);
         let device_types = unsafe {
             vec![
@@ -58,6 +58,7 @@ impl Client {
             let name: *mut NSString = unsafe { msg_send![*device, localizedName] };
             println!("{}", unsafe { name.as_ref().unwrap().as_str() });
         }
+        Ok(())
     }
 
     pub fn capture(filename: String, warmup: f32) {

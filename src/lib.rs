@@ -29,7 +29,7 @@ impl Camera {
         Ok(())
     }
 
-    pub fn list_devices() {
+    pub fn list_devices() -> Result<(), String> {
         os::Client::list_devices()
     }
 

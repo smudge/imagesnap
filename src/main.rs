@@ -41,10 +41,10 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
         (filename, None, false, false, verbose, Ok(warmup), device) => {
             Camera::new(device, verbose, warmup)
                 .snap(filename.unwrap_or("snapshot.jpg".to_string()))
-                .unwrap()
         }
         (None, None, true, false, _, Ok(_), _) => Camera::list_devices(),
-        (None, None, false, true, _, Ok(_), _) => print_usage(&program, opts, 0),
-        (_, _, _, _, _, _, _) => print_usage(&program, opts, 1),
+        (None, None, false, true, _, Ok(_), _) => Ok(print_usage(&program, opts, 0)),
+        (_, _, _, _, _, _, _) => Ok(print_usage(&program, opts, 1)),
     }
+    .unwrap();
 }
