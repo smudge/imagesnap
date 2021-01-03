@@ -3,37 +3,29 @@ mod os;
 
 pub struct Snap {
     device: String,
-    filename: String,
     verbose: bool,
     warmup: f32,
 }
 
 impl Snap {
-    pub fn new(
-        device: Option<String>,
-        filename: Option<String>,
-        verbose: bool,
-        warmup: Option<f32>,
-    ) -> Snap {
+    pub fn new(device: Option<String>, verbose: bool, warmup: Option<f32>) -> Snap {
         let device = device.unwrap_or(Snap::default_device());
-        let filename = filename.unwrap_or("snapshot.jpg".to_string());
         let warmup = warmup.unwrap_or(0.5);
         Snap {
             device,
-            filename,
             verbose,
             warmup,
         }
     }
 
-    pub fn create(&self) -> Result<(), String> {
+    pub fn create(&self, filename: String) -> Result<(), String> {
         if self.verbose {
             println!(
                 "Capturing image from device \"{}\"..................{}",
-                self.device, self.filename
+                self.device, filename
             );
         }
-        os::Client::capture(self.filename.clone(), self.warmup);
+        os::Client::capture(filename.clone(), self.warmup);
         Ok(())
     }
 

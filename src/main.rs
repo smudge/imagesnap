@@ -39,8 +39,8 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
         matches.opt_str("d"),
     ) {
         (filename, None, false, false, verbose, Ok(warmup), device) => {
-            Snap::new(device, filename, verbose, warmup)
-                .create()
+            Snap::new(device, verbose, warmup)
+                .create(filename.unwrap_or("snapshot.jpg".to_string()))
                 .unwrap()
         }
         (None, None, true, false, _, Ok(_), _) => Snap::list_devices(),
