@@ -17,7 +17,7 @@ impl Snap {
     ) -> Snap {
         let device = device.unwrap_or(Snap::default_device());
         let filename = filename.unwrap_or("snapshot.jpg".to_string());
-        let warmup = warmup.unwrap_or(0.0);
+        let warmup = warmup.unwrap_or(0.5);
         Snap {
             device,
             filename,
