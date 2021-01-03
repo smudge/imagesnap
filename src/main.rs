@@ -31,27 +31,22 @@ fn print_usage(program: &String, opts: Options, code: i32) {
 }
 
 fn handle_args(program: &String, opts: Options, matches: getopts::Matches) {
-    let filename: Result<Option<String>, ()> = match &matches.free[..] {
-        [] => Ok(None),
-        [filename] => Ok(Some(filename.clone())),
-        _ => Err(()),
-    };
-
     match (
-        filename,
+        matches.free.get(0).map(|s| s.to_owned()),
+        matches.free.get(1),
         matches.opt_present("l"),
         matches.opt_present("h"),
         !matches.opt_present("q"),
         matches.opt_str("w").map(|s| s.parse()).transpose(),
         matches.opt_str("d"),
     ) {
-        (Ok(filename), false, false, verbose, Ok(warmup), device) => {
+        (filename, None, false, false, verbose, Ok(warmup), device) => {
             Snap::new(device, filename, verbose, warmup)
                 .create()
                 .unwrap()
         }
-        (Ok(_), true, false, _, Ok(_), _) => Snap::list_devices(),
-        (Ok(_), false, true, _, Ok(_), _) => print_usage(&program, opts, 0),
-        (_, _, _, _, _, _) => print_usage(&program, opts, 1),
+        (None, None, true, false, _, Ok(_), _) => Snap::list_devices(),
+        (None, None, false, true, _, Ok(_), _) => print_usage(&program, opts, 0),
+        (_, _, _, _, _, _, _) => print_usage(&program, opts, 1),
     }
 }
