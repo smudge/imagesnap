@@ -26,7 +26,7 @@ fn main() -> Result<(), String> {
 
     let mut opts = Options::new();
     opts.optflag("q", "quiet", "Do not output any text");
-    opts.optopt("w", "warmup", "Warm up camera for x.xx seconds", "x.xx");
+    opts.optopt("w", "warmup", "Warm up camera for x seconds [0-10]", "x.x");
     opts.optflag("l", "list", "List available capture devices");
     opts.optopt("d", "device", "Use specific capture device", "NAME");
     opts.optflag("h", "help", "This help message");
@@ -66,12 +66,15 @@ fn run(matches: getopts::Matches) -> Exit {
         matches.opt_str("w").map(|s| s.parse()).transpose(),
         matches.opt_str("d"),
     ) {
+        (_, None, false, false, _, Ok(Some(w)), _) if w < 0.0 || w > 10.0 => {
+            usage_err("Warmup must be between 0 and 10 seconds")
+        }
         (maybe_file, None, false, false, verbose, Ok(warmup), device) => handle(
             Camera::new(device, verbose, warmup)
                 .snap(maybe_file.unwrap_or("snapshot.jpg".to_string())),
         ),
-        (None, None, true, false, _, Ok(_), _) => handle(Camera::list_devices()),
-        (None, None, false, true, _, Ok(_), _) => help(),
+        (None, None, true, false, _, Ok(None), _) => handle(Camera::list_devices()),
+        (None, None, false, true, _, Ok(None), _) => help(),
         (_, None, false, false, _, Err(_), _) => usage_err("Failed to parse warmup!"),
         (_, _, _, _, _, _, _) => usage_err("Invalid combination of arguments."),
     }
