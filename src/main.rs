@@ -29,7 +29,7 @@ fn main() -> Result<(), Output> {
 
     match opts
         .parse(&args[1..])
-        .map_or_else(|_| usage_err("Failed to parse args!"), |m| run(m))
+        .map_or_else(|m| usage_err(&m.to_string()), |m| run(m))
     {
         Err(Output::Help(val)) => {
             print_usage(&args[0], &opts);
