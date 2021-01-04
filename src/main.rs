@@ -1,6 +1,6 @@
 extern crate getopts;
 
-use getopts::Options;
+use getopts::{Matches, Options};
 use imagesnap::Camera;
 use std::env::args;
 
@@ -56,7 +56,7 @@ fn print_usage(program: &String, opts: &Options) {
     println!("{}", opts.usage(""));
 }
 
-fn run(matches: getopts::Matches) -> Exit {
+fn run(matches: Matches) -> Exit {
     match (
         matches.free.get(0).map(|s| s.to_owned()),
         matches.free.get(1),
