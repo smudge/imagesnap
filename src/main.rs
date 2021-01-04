@@ -2,27 +2,42 @@ extern crate getopts;
 
 use getopts::{Matches, Options};
 use imagesnap::Camera;
-use std::env::args;
+use std::{env, error, fmt};
 
-type Exit = Result<Output, Output>;
+type Exit = Result<(), Error>;
 
 #[derive(Debug)]
-struct Output {
-    help: bool,
-    msg: Option<String>,
+enum Error {
+    UsageError(Option<String>),
+    InternalError(String),
 }
 
-impl From<String> for Output {
-    fn from(err: String) -> Output {
-        Output {
-            msg: Some(err),
-            help: false,
-        }
+impl error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Oh no, something bad went down")
     }
 }
 
-fn main() -> Result<(), String> {
-    let args: Vec<String> = args().collect();
+impl From<String> for Error {
+    fn from(msg: String) -> Error {
+        Error::InternalError(msg)
+    }
+}
+
+impl Error {
+    fn err(msg: &str) -> Result<(), Error> {
+        Err(Error::UsageError(Some(msg.to_string())))
+    }
+
+    fn print_usage() -> Result<(), Error> {
+        Err(Error::UsageError(None))
+    }
+}
+
+fn main() -> Result<(), Error> {
+    let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
     opts.optflag("q", "quiet", "Do not output any text");
@@ -31,22 +46,13 @@ fn main() -> Result<(), String> {
     opts.optopt("d", "device", "Use specific capture device", "NAME");
     opts.optflag("h", "help", "This help message");
 
-    let print_usage = |out: &Output| {
-        if out.help {
+    Ok(opts
+        .parse(&args[1..])
+        .map_or_else(|m| Error::err(&m.to_string()), |m| run(m))
+        .or_else(|e| {
             print_usage(&args[0], &opts);
-        }
-    };
-
-    opts.parse(&args[1..])
-        .map_or_else(|m| usage_err(&m.to_string()), |m| run(m))
-        .or_else(|out| {
-            print_usage(&out);
-            Err(out.msg.unwrap())
-        })
-        .and_then(|out| {
-            print_usage(&out);
-            Ok(())
-        })
+            Err(e)
+        })?)
 }
 
 fn print_usage(program: &String, opts: &Options) {
@@ -67,43 +73,15 @@ fn run(matches: Matches) -> Exit {
         matches.opt_str("d"),
     ) {
         (_, None, false, false, _, Ok(Some(w)), _) if w < 0.0 || w > 10.0 => {
-            usage_err("Warmup must be between 0 and 10 seconds")
+            Error::err("Warmup must be between 0 and 10 seconds")
         }
-        (maybe_file, None, false, false, verbose, Ok(warmup), device) => handle(
-            Camera::new(device, verbose, warmup)
-                .snap(maybe_file.unwrap_or("snapshot.jpg".to_string())),
-        ),
-        (None, None, true, false, _, Ok(None), _) => handle(Camera::list_devices()),
-        (None, None, false, true, _, Ok(None), _) => help(),
-        (_, None, false, false, _, Err(_), _) => usage_err("Failed to parse warmup!"),
-        (_, _, _, _, _, _, _) => usage_err("Invalid combination of arguments."),
+        (maybe_file, None, false, false, verbose, Ok(warmup), device) => {
+            Ok(Camera::new(device, verbose, warmup)
+                .snap(maybe_file.unwrap_or("snapshot.jpg".to_string()))?)
+        }
+        (None, None, true, false, _, Ok(None), _) => Ok(Camera::list_devices()?),
+        (None, None, false, true, _, Ok(None), _) => Error::print_usage(),
+        (_, None, false, false, _, Err(_), _) => Error::err("Failed to parse warmup!"),
+        (_, _, _, _, _, _, _) => Error::err("Invalid combination of arguments."),
     }
-}
-
-fn help() -> Exit {
-    Ok(Output {
-        help: true,
-        msg: None,
-    })
-}
-
-fn handle(result: Result<(), String>) -> Exit {
-    if result.is_err() {
-        Err(Output {
-            help: false,
-            msg: Some(result.err().unwrap()),
-        })
-    } else {
-        Ok(Output {
-            help: false,
-            msg: None,
-        })
-    }
-}
-
-fn usage_err(value: &str) -> Exit {
-    Err(Output {
-        help: true,
-        msg: Some(value.to_string()),
-    })
 }
