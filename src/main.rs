@@ -2,14 +2,23 @@ extern crate getopts;
 
 use getopts::{Matches, Options};
 use imagesnap::Camera;
-use std::env;
+use std::{env, fmt};
 
 type Exit = Result<(), Error>;
 
-#[derive(Debug)]
 enum Error {
     UsageError(Option<String>),
     InternalError(String),
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            Error::UsageError(Some(val)) => f.pad(val),
+            Error::InternalError(val) => f.pad(val),
+            Error::UsageError(None) => unreachable!(),
+        }
+    }
 }
 
 impl From<String> for Error {
