@@ -14,21 +14,25 @@ fn main() -> Result<(), String> {
     opts.optopt("d", "device", "Use specific capture device", "NAME");
     opts.optflag("h", "help", "This help message");
 
-    match opts.parse(&args[1..]) {
-        Ok(m) => handle_args(&args[0], opts, m),
-        Err(_) => print_usage(&args[0], opts, err("Failed to parse args!")),
-    }
+    opts.parse(&args[1..])
+        .map_or_else(
+            |_| err("Failed to parse args!"),
+            |m| run(&args[0], &opts, m),
+        )
+        .map_err(|e| {
+            print_usage(&args[0], &opts);
+            e
+        })
 }
 
-fn print_usage(program: &String, opts: Options, result: Result<(), String>) -> Result<(), String> {
+fn print_usage(program: &String, opts: &Options) {
     println!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     println!("  {}\n", env!("CARGO_PKG_DESCRIPTION"));
     print!("Usage:\n  {} [<options>] [OUTPUT.(jpg|png|tif)]", program);
     println!("{}", opts.usage(""));
-    result
 }
 
-fn handle_args(program: &String, opts: Options, matches: getopts::Matches) -> Result<(), String> {
+fn run(program: &String, opts: &Options, matches: getopts::Matches) -> Result<(), String> {
     match (
         matches.free.get(0).map(|s| s.to_owned()),
         matches.free.get(1),
@@ -43,18 +47,10 @@ fn handle_args(program: &String, opts: Options, matches: getopts::Matches) -> Re
                 .snap(maybe_file.unwrap_or("snapshot.jpg".to_string()))
         }
         (None, None, true, false, _, Ok(_), _) => Camera::list_devices(),
-        (None, None, false, true, _, Ok(_), _) => print_usage(&program, opts, ok()),
-        (_, None, false, false, _, Err(_), _) => {
-            print_usage(&program, opts, err("Failed to parse warmup!"))
-        }
-        (_, _, _, _, _, _, _) => {
-            print_usage(&program, opts, err("Invalid combination of arguments."))
-        }
+        (None, None, false, true, _, Ok(_), _) => Ok(print_usage(program, opts)),
+        (_, None, false, false, _, Err(_), _) => err("Failed to parse warmup!"),
+        (_, _, _, _, _, _, _) => err("Invalid combination of arguments."),
     }
-}
-
-fn ok() -> Result<(), String> {
-    Ok(())
 }
 
 fn err(value: &str) -> Result<(), String> {
