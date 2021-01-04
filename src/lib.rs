@@ -18,11 +18,12 @@ impl Camera {
         }
     }
 
-    pub fn snap(&self, filename: String) -> Result<(), String> {
+    pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), String> {
+        let filename = filename.into();
         if self.verbose {
             println!(
                 "Capturing image from device \"{}\"..................{}",
-                self.device, filename
+                self.device, filename,
             );
         }
         os::Client::capture(filename.clone(), self.warmup);

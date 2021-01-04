@@ -36,6 +36,8 @@ impl Error {
     }
 }
 
+static DEFAULT_FILE: &str = "snapshot.jpg";
+
 fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
 
@@ -58,13 +60,15 @@ fn main() -> Result<(), Error> {
 fn print_usage(program: &String, opts: &Options) {
     println!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     println!("  {}\n", env!("CARGO_PKG_DESCRIPTION"));
-    print!("Usage:\n  {} [<options>] [OUTPUT.(jpg|png|tif)]", program);
+    println!("Usage:\n  {} [<OPTIONS>] [FILENAME]\n", program);
+    println!("FILENAME:");
+    print!("  Defaults to '{}' (only JPG supported)", DEFAULT_FILE);
     println!("{}", opts.usage(""));
 }
 
 fn run(matches: Matches) -> Exit {
     match (
-        matches.free.get(0).map(|s| s.to_owned()),
+        matches.free.get(0).map(|s| s.as_str()),
         matches.free.get(1),
         matches.opt_present("l"),
         matches.opt_present("h"),
@@ -76,8 +80,7 @@ fn run(matches: Matches) -> Exit {
             Error::err("Warmup must be between 0 and 10 seconds")
         }
         (maybe_file, None, false, false, verbose, Ok(warmup), device) => {
-            Ok(Camera::new(device, verbose, warmup)
-                .snap(maybe_file.unwrap_or("snapshot.jpg".to_string()))?)
+            Ok(Camera::new(device, verbose, warmup).snap(maybe_file.unwrap_or(DEFAULT_FILE))?)
         }
         (None, None, true, false, _, Ok(None), _) => Ok(Camera::list_devices()?),
         (None, None, false, true, _, Ok(None), _) => Error::print_usage(),
