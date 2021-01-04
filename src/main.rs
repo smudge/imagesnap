@@ -2,7 +2,7 @@ extern crate getopts;
 
 use getopts::{Matches, Options};
 use imagesnap::Camera;
-use std::{env, error, fmt};
+use std::env;
 
 type Exit = Result<(), Error>;
 
@@ -10,14 +10,6 @@ type Exit = Result<(), Error>;
 enum Error {
     UsageError(Option<String>),
     InternalError(String),
-}
-
-impl error::Error for Error {}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Oh no, something bad went down")
-    }
 }
 
 impl From<String> for Error {
