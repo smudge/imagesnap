@@ -44,8 +44,13 @@ fn main() -> Result<(), Error> {
         .parse(&args[1..])
         .map_or_else(|m| Error::err(&m.to_string()), |m| run(m))
         .or_else(|e| {
-            print_usage(&args[0], &opts);
-            Err(e)
+            if let Error::UsageError(_) = e {
+                print_usage(&args[0], &opts);
+            }
+            match e {
+                Error::UsageError(None) => Ok(()),
+                other => Err(other),
+            }
         })?)
 }
 
