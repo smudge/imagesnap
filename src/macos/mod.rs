@@ -39,7 +39,7 @@ impl Client {
         unsafe { name.as_ref() }.unwrap().as_str().to_string()
     }
 
-    pub fn list_devices() -> Result<(), String> {
+    pub fn device_names() -> Result<Vec<String>, String> {
         let discovery_session = class!(AVCaptureDeviceDiscoverySession);
         let device_types = unsafe {
             vec![
@@ -54,11 +54,12 @@ impl Client {
         };
         let devices: *mut NSArray<NSObject> = unsafe { msg_send![discovery_session, devices] };
         let devices = unsafe { devices.as_ref().unwrap().to_vec() };
+        let mut device_names = vec![];
         for device in &devices {
             let name: *mut NSString = unsafe { msg_send![*device, localizedName] };
-            println!("{}", unsafe { name.as_ref().unwrap().as_str() });
+            device_names.push(unsafe { name.as_ref() }.unwrap().as_str().to_string())
         }
-        Ok(())
+        Ok(device_names)
     }
 
     pub fn capture(filename: String, warmup: f32) {

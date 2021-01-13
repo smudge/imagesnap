@@ -1,7 +1,7 @@
 extern crate getopts;
 
 use getopts::{Matches, Options};
-use imagesnap::Camera;
+use imagesnap::{Camera, Device};
 use std::{env, fmt};
 
 type Exit = Result<(), Error>;
@@ -80,17 +80,24 @@ fn run(matches: Matches) -> Exit {
         matches.opt_present("h"),
         !matches.opt_present("q"),
         matches.opt_str("w").map(|s| s.parse()).transpose(),
-        matches.opt_str("d"),
+        matches.opt_str("d").map(|d| Device::find(d)).transpose(),
     ) {
-        (_, None, false, false, _, Ok(Some(w)), _) if w < 0.0 || w > 10.0 => {
+        (_, None, false, false, _, Ok(Some(w)), Ok(_)) if w < 0.0 || w > 10.0 => {
             Error::err("Warmup must be between 0 and 10 seconds")
         }
-        (maybe_file, None, false, false, verbose, Ok(warmup), device) => {
+        (maybe_file, None, false, false, verbose, Ok(warmup), Ok(device)) => {
             Ok(Camera::new(device, verbose, warmup)?.snap(maybe_file.unwrap_or(DEFAULT_FILE))?)
         }
-        (None, None, true, false, _, Ok(None), _) => Ok(Camera::list_devices()?),
-        (None, None, false, true, _, Ok(None), _) => Error::print_usage(),
+        (None, None, true, false, _, Ok(None), Ok(None)) => list_devices(),
+        (None, None, false, true, _, Ok(None), Ok(None)) => Error::print_usage(),
         (_, None, false, false, _, Err(_), _) => Error::err("Failed to parse warmup!"),
         (_, _, _, _, _, _, _) => Error::err("Invalid combination of arguments."),
     }
+}
+
+fn list_devices() -> Exit {
+    for device in Device::all() {
+        println!("{}", device);
+    }
+    Ok(())
 }

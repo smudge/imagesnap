@@ -2,18 +2,48 @@
 mod os;
 
 pub struct Camera {
-    device: String,
+    device: Device,
     verbose: bool,
     warmup: f32,
 }
 
+pub struct Device {
+    name: String,
+}
+
+impl std::fmt::Display for Device {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.pad(self.name.as_str())
+    }
+}
+
+impl Device {
+    pub fn all() -> Vec<Device> {
+        os::Client::device_names()
+            .unwrap()
+            .iter()
+            .map(|name| Device { name: name.clone() })
+            .collect()
+    }
+
+    pub fn find(_name: String) -> Result<Device, String> {
+        Ok(Device::default())
+    }
+
+    pub fn default() -> Device {
+        Device {
+            name: os::Client::default_device(),
+        }
+    }
+}
+
 impl Camera {
     pub fn new(
-        device: Option<String>,
+        device: Option<Device>,
         verbose: bool,
         warmup: Option<f32>,
     ) -> Result<Camera, String> {
-        let device = device.unwrap_or(Camera::default_device());
+        let device = device.unwrap_or(Device::default());
         let warmup = warmup.unwrap_or(0.5);
         Ok(Camera {
             device,
@@ -32,13 +62,5 @@ impl Camera {
         }
         os::Client::capture(filename.clone(), self.warmup);
         Ok(())
-    }
-
-    pub fn list_devices() -> Result<(), String> {
-        os::Client::list_devices()
-    }
-
-    pub fn default_device() -> String {
-        os::Client::default_device()
     }
 }
