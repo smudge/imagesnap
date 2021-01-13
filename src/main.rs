@@ -86,7 +86,7 @@ fn run(matches: Matches) -> Exit {
             Error::err("Warmup must be between 0 and 10 seconds")
         }
         (maybe_file, None, false, false, verbose, Ok(warmup), device) => {
-            Ok(Camera::new(device, verbose, warmup).snap(maybe_file.unwrap_or(DEFAULT_FILE))?)
+            Ok(Camera::new(device, verbose, warmup)?.snap(maybe_file.unwrap_or(DEFAULT_FILE))?)
         }
         (None, None, true, false, _, Ok(None), _) => Ok(Camera::list_devices()?),
         (None, None, false, true, _, Ok(None), _) => Error::print_usage(),

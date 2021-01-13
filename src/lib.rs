@@ -8,14 +8,18 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(device: Option<String>, verbose: bool, warmup: Option<f32>) -> Camera {
+    pub fn new(
+        device: Option<String>,
+        verbose: bool,
+        warmup: Option<f32>,
+    ) -> Result<Camera, String> {
         let device = device.unwrap_or(Camera::default_device());
         let warmup = warmup.unwrap_or(0.5);
-        Camera {
+        Ok(Camera {
             device,
             verbose,
             warmup,
-        }
+        })
     }
 
     pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), String> {
