@@ -28,8 +28,8 @@ impl From<String> for Error {
 }
 
 impl Error {
-    fn err(msg: &str) -> Result<(), Error> {
-        Err(Error::UsageError(Some(msg.to_string())))
+    fn err<S: Into<String>>(msg: S) -> Result<(), Error> {
+        Err(Error::UsageError(Some(msg.into())))
     }
 
     fn print_usage() -> Result<(), Error> {
@@ -91,6 +91,7 @@ fn run(matches: Matches) -> Exit {
         (None, None, true, false, _, Ok(None), Ok(None)) => list_devices(),
         (None, None, false, true, _, Ok(None), Ok(None)) => Error::print_usage(),
         (_, None, false, false, _, Err(_), _) => Error::err("Failed to parse warmup!"),
+        (_, None, false, false, _, Ok(_), Err(e)) => Error::err(e),
         (_, _, _, _, _, _, _) => Error::err("Invalid combination of arguments."),
     }
 }

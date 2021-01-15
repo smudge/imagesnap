@@ -7,6 +7,7 @@ pub struct Camera {
     warmup: f32,
 }
 
+#[derive(Clone)]
 pub struct Device {
     name: String,
 }
@@ -26,8 +27,17 @@ impl Device {
             .collect()
     }
 
-    pub fn find(_name: String) -> Result<Device, String> {
-        Ok(Device::default())
+    pub fn find(name: String) -> Result<Device, String> {
+        match Device::all()
+            .iter()
+            .filter(|e| e.name.contains(name.as_str()))
+            .collect::<Vec<_>>()
+            .split_first()
+        {
+            Some((a, [])) => Ok((*a).clone()),
+            Some((_, _)) => Err("Multiple matching devices found!".to_string()),
+            None => Err("No matching devices found!".to_string()),
+        }
     }
 
     pub fn default() -> Device {
