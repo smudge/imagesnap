@@ -1,3 +1,17 @@
+extern crate thiserror;
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ImagesnapError {
+    #[error("Multiple matching devices found!")]
+    MultipleMatchingDevices,
+    #[error("No matching devices found!")]
+    NoMatchingDevices,
+    #[error("Error discovering devices!")]
+    DeviceLookupError,
+}
+
 #[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
 mod os;
 
@@ -19,24 +33,24 @@ impl std::fmt::Display for Device {
 }
 
 impl Device {
-    pub fn all() -> Vec<Device> {
-        os::Client::device_names()
-            .unwrap()
+    pub fn all() -> Result<Vec<Device>, ImagesnapError> {
+        Ok(os::Client::device_names()
+            .map_err(|_| ImagesnapError::DeviceLookupError)?
             .iter()
             .map(|name| Device { name: name.clone() })
-            .collect()
+            .collect())
     }
 
-    pub fn find(name: String) -> Result<Device, String> {
-        match Device::all()
+    pub fn find(name: String) -> Result<Device, ImagesnapError> {
+        match Device::all()?
             .iter()
             .filter(|e| e.name.contains(name.as_str()))
             .collect::<Vec<_>>()
             .split_first()
         {
             Some((a, [])) => Ok((*a).clone()),
-            Some((_, _)) => Err("Multiple matching devices found!".to_string()),
-            None => Err("No matching devices found!".to_string()),
+            Some((_, _)) => Err(ImagesnapError::MultipleMatchingDevices),
+            None => Err(ImagesnapError::NoMatchingDevices),
         }
     }
 
@@ -52,7 +66,7 @@ impl Camera {
         device: Option<Device>,
         verbose: bool,
         warmup: Option<f32>,
-    ) -> Result<Camera, String> {
+    ) -> Result<Camera, ImagesnapError> {
         let device = device.unwrap_or(Device::default());
         let warmup = warmup.unwrap_or(0.5);
         Ok(Camera {
@@ -62,7 +76,7 @@ impl Camera {
         })
     }
 
-    pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), String> {
+    pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), ImagesnapError> {
         let filename = filename.into();
         if self.verbose {
             println!(
