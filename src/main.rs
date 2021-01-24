@@ -32,7 +32,7 @@ fn main() -> Result<()> {
             Err(anyhow!("Warmup must be between 0 and 10 seconds"))
         }
         (maybe_file, None, false, false, verbose, Ok(warmup), Ok(device)) => {
-            Ok(Camera::new(device, verbose, warmup)?.snap(maybe_file.unwrap_or(DEFAULT_FILE))?)
+            snap(maybe_file.unwrap_or(DEFAULT_FILE), verbose, warmup, device)
         }
         (None, None, true, false, _, Ok(None), Ok(None)) => list_devices(),
         (None, None, false, true, _, Ok(None), Ok(None)) => Ok(print_usage(&args[0], &opts)),
@@ -55,4 +55,22 @@ fn list_devices() -> Result<()> {
     Ok(for device in Device::all()? {
         println!("{}", device);
     })
+}
+
+fn snap<S: Into<String>>(
+    filename: S,
+    verbose: bool,
+    warmup: Option<f32>,
+    device: Option<Device>,
+) -> Result<()> {
+    Ok(Camera::new(device, warmup)?
+        .on_snap(move |device, filename| {
+            if verbose {
+                println!(
+                    "Capturing image from device \"{}\"..................{}",
+                    device, filename,
+                )
+            }
+        })
+        .snap(filename)?)
 }
