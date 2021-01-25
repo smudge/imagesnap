@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     opts.optflag("q", "quiet", "Do not output any text");
     opts.optopt("w", "warmup", "Warm up camera for x seconds [0-10]", "x.x");
     opts.optflag("l", "list", "List available capture devices");
-    opts.optopt("d", "device", "Use specific capture device", "NAME");
+    opts.optopt("d", "device", "Use device with QUERY in its name", "QUERY");
     opts.optflag("h", "help", "This help message");
 
     let matches = opts.parse(&args[1..])?;
