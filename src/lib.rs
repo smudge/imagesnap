@@ -16,9 +16,8 @@ pub enum ImagesnapError {
 mod os;
 
 pub struct Camera {
-    device: Device,
+    pub device: Device,
     warmup: f32,
-    on_snap: Box<dyn FnMut(Device, String)>,
 }
 
 #[derive(Clone)]
@@ -65,22 +64,12 @@ impl Camera {
     pub fn new(device: Option<Device>, warmup: Option<f32>) -> Result<Camera, ImagesnapError> {
         let device = device.unwrap_or(Device::default());
         let warmup = warmup.unwrap_or(0.5);
-        Ok(Camera {
-            device,
-            warmup,
-            on_snap: Box::new(|_, _| ()),
-        })
+        Ok(Camera { device, warmup })
     }
 
-    pub fn snap<S: Into<String>>(&mut self, filename: S) -> Result<(), ImagesnapError> {
+    pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), ImagesnapError> {
         let filename = filename.into();
-        (self.on_snap)(self.device.clone(), filename.clone());
         os::Client::capture(filename.clone(), self.warmup);
         Ok(())
-    }
-
-    pub fn on_snap(&mut self, c: impl FnMut(Device, String) + 'static) -> &mut Camera {
-        self.on_snap = Box::new(c);
-        self
     }
 }

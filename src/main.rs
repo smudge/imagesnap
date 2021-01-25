@@ -63,14 +63,14 @@ fn snap<S: Into<String>>(
     warmup: Option<f32>,
     device: Option<Device>,
 ) -> Result<()> {
-    Ok(Camera::new(device, warmup)?
-        .on_snap(move |device, filename| {
-            if verbose {
-                println!(
-                    "Capturing image from device \"{}\"..................{}",
-                    device, filename,
-                )
-            }
-        })
-        .snap(filename)?)
+    let camera = Camera::new(device, warmup)?;
+    let filename = filename.into();
+    if verbose {
+        println!(
+            "Capturing image from device \"{}\"..................{}",
+            camera.device,
+            filename.clone()
+        )
+    }
+    Ok(camera.snap(filename)?)
 }
