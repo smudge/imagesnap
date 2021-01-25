@@ -68,8 +68,7 @@ fn snap<S: Into<String>>(
     if verbose {
         println!(
             "Capturing image from device \"{}\"..................{}",
-            camera.device,
-            filename.clone()
+            camera.device, &filename
         )
     }
     Ok(camera.snap(filename)?)
