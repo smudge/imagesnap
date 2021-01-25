@@ -23,22 +23,19 @@ extern "C" {
 pub struct Client {}
 
 impl Client {
-    pub fn default_input() -> *mut Object {
+    pub fn default_device() -> String {
         let av_capture_device = class!(AVCaptureDevice);
-        unsafe {
+        let default_input: *mut Object = unsafe {
             msg_send![
                 av_capture_device,
                 defaultDeviceWithMediaType: AVMediaTypeVideo
             ]
-        }
-    }
-
-    pub fn default_device() -> String {
-        let name: *mut NSString = unsafe { msg_send![Client::default_input(), localizedName] };
+        };
+        let name: *mut NSString = unsafe { msg_send![default_input, localizedName] };
         unsafe { name.as_ref() }.unwrap().as_str().to_string()
     }
 
-    pub fn device_names() -> Result<Vec<String>, String> {
+    pub fn devices() -> Result<*mut NSArray<NSObject>, String> {
         let discovery_session = class!(AVCaptureDeviceDiscoverySession);
         let device_types = unsafe {
             vec![
@@ -52,25 +49,55 @@ impl Client {
             msg_send![discovery_session, discoverySessionWithDeviceTypes:device_types mediaType:AVMediaTypeVideo position:position]
         };
         let devices: *mut NSArray<NSObject> = unsafe { msg_send![discovery_session, devices] };
-        let devices = unsafe { devices.as_ref().unwrap().to_vec() };
+        Ok(devices)
+    }
+
+    pub fn device_names() -> Result<Vec<String>, String> {
         let mut device_names = vec![];
-        for device in &devices {
-            let name: *mut NSString = unsafe { msg_send![*device, localizedName] };
+        let devices = unsafe { Client::devices()?.as_ref() }.unwrap().enumerator();
+
+        for device in devices {
+            let name: *mut NSString = unsafe { msg_send![device, localizedName] };
             device_names.push(unsafe { name.as_ref() }.unwrap().as_str().to_string())
         }
         Ok(device_names)
     }
 
-    pub fn capture(filename: String, warmup: f32) {
+    pub fn device_with_name<S: Into<String>>(name: S) -> Result<*mut NSObject, String> {
+        let name = name.into();
+        let devices = unsafe { Client::devices()?.as_ref() }.unwrap().enumerator();
+
+        for device in devices {
+            let n: *mut NSString = unsafe { msg_send![device, localizedName] };
+            let n = unsafe { n.as_ref() }.unwrap().as_str().to_string();
+            if name == n {
+                let unique_id: Box<*mut NSObject> =
+                    Box::new(unsafe { msg_send![device, uniqueID] });
+                let av_capture_device = class!(AVCaptureDevice);
+                let device: *mut NSObject =
+                    unsafe { msg_send![av_capture_device, deviceWithUniqueID: *unique_id] };
+                return Ok(device);
+            }
+        }
+        Err("No device found".to_string())
+    }
+
+    pub fn capture<S: Into<String>>(
+        device_name: S,
+        filename: S,
+        warmup: f32,
+    ) -> Result<(), String> {
+        let filename = filename.into();
+
         let session = class!(AVCaptureSession);
         let session: *mut Object = unsafe { msg_send![session, alloc] };
         let session: *mut Object = unsafe { msg_send![session, init] };
 
-        let device: *mut Object = Client::default_input();
+        let device = Box::new(Client::device_with_name(device_name)?);
         let input = class!(AVCaptureDeviceInput);
         let null: *const i32 = std::ptr::null();
         let input: *mut Object =
-            unsafe { msg_send![input, deviceInputWithDevice: device error: null] };
+            unsafe { msg_send![input, deviceInputWithDevice: *device error: null] };
 
         unsafe { msg_send![session, addInput: input] }
 
@@ -107,5 +134,6 @@ impl Client {
         rx.recv().unwrap();
 
         unsafe { msg_send![session, stopRunning] }
+        Ok(())
     }
 }

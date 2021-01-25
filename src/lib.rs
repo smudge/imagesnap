@@ -10,6 +10,8 @@ pub enum ImagesnapError {
     NoMatchingDevices,
     #[error("Error discovering devices!")]
     DeviceLookupError,
+    #[error("Error capturing image!")]
+    CaptureError,
 }
 
 #[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
@@ -70,7 +72,7 @@ impl Camera {
 
     pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), ImagesnapError> {
         let filename = filename.into();
-        os::Client::capture(filename.clone(), self.warmup);
-        Ok(())
+        os::Client::capture(&self.device.name, &filename, self.warmup)
+            .map_err(|_| ImagesnapError::CaptureError)
     }
 }
