@@ -27,7 +27,7 @@ pub struct Device {
 
 impl std::fmt::Display for Device {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        f.pad(self.name.as_str())
+        f.pad(&self.name)
     }
 }
 
@@ -40,10 +40,11 @@ impl Device {
             .collect())
     }
 
-    pub fn find(name: String) -> Result<Device, ImagesnapError> {
+    pub fn find<S: Into<String>>(name: S) -> Result<Device, ImagesnapError> {
+        let name = name.into();
         match Device::all()?
             .iter()
-            .filter(|e| e.name.contains(name.as_str()))
+            .filter(|e| e.name.contains(&name))
             .collect::<Vec<_>>()
             .split_first()
         {
