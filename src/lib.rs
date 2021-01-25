@@ -70,6 +70,10 @@ impl Camera {
         Ok(Camera { device, warmup })
     }
 
+    pub fn default() -> Result<Camera, ImagesnapError> {
+        Camera::new(None, None)
+    }
+
     pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), ImagesnapError> {
         let filename = filename.into();
         os::Client::capture(&self.device.name, &filename, self.warmup)
