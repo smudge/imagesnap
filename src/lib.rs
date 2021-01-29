@@ -74,9 +74,10 @@ impl Camera {
         Camera::new(None, None)
     }
 
-    pub fn snap<S: Into<String>>(&self, filename: S) -> Result<(), ImagesnapError> {
+    pub async fn snap<S: Into<String>>(&self, filename: S) -> Result<(), ImagesnapError> {
         let filename = filename.into();
         os::Client::capture(&self.device.name, &filename, self.warmup)
+            .await
             .map_err(|_| ImagesnapError::CaptureError)
     }
 }

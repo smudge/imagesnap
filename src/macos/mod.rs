@@ -82,7 +82,7 @@ impl Client {
         Err("No device found".to_string())
     }
 
-    pub fn capture<S: Into<String>>(
+    pub async fn capture<S: Into<String>>(
         device_name: S,
         filename: S,
         warmup: f32,

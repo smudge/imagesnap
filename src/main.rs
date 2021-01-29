@@ -2,6 +2,7 @@ extern crate anyhow;
 extern crate getopts;
 
 use anyhow::{anyhow, Result};
+use futures::executor::block_on;
 use getopts::Options;
 use imagesnap::{Camera, Device};
 use std::env;
@@ -65,11 +66,12 @@ fn snap<S: Into<String>>(
 ) -> Result<()> {
     let camera = Camera::new(device, warmup)?;
     let filename = filename.into();
+    let result = camera.snap(&filename);
     if verbose {
         println!(
             "Capturing image from device \"{}\"..................{}",
             camera.device, &filename
         )
     }
-    Ok(camera.snap(filename)?)
+    Ok(block_on(result)?)
 }
