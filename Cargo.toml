@@ -10,6 +10,7 @@ readme = "README.md"
 license = "MIT"
 
 [dependencies]
+lazy_static = "1.4"
 getopts = "0.2"
 anyhow = "1.0"
 thiserror = "1.0"
