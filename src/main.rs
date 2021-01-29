@@ -15,6 +15,7 @@ static DEFAULT_FILE: &str = "snapshot.jpg";
 lazy_static! {
     static ref ARGS: Vec<String> = env::args().collect();
     static ref OPTS: Mutex<Options> = Mutex::new(Options::new());
+    static ref VERBOSE: Mutex<bool> = Mutex::new(true);
 }
 
 fn main() -> Result<()> {
@@ -25,27 +26,32 @@ fn main() -> Result<()> {
     opts.optopt("d", "device", "Use device with QUERY in its name", "QUERY");
     opts.optflag("h", "help", "This help message");
 
-    let matches = OPTS.lock().unwrap().parse(&ARGS[1..])?;
+    let matches = opts.parse(&ARGS[1..])?;
+    drop(opts);
+
+    let mut verbose = VERBOSE.lock().unwrap();
+    *verbose = !matches.opt_present("q");
+    drop(verbose);
+
     match (
         matches.free.get(0).map(|s| s.as_str()),
         matches.free.get(1),
         matches.opt_present("l"),
         matches.opt_present("h"),
-        !matches.opt_present("q"),
         matches.opt_str("w").map(|s| s.parse()).transpose(),
         matches.opt_str("d").map(|d| Device::find(d)).transpose(),
     ) {
-        (_, None, false, false, _, Ok(Some(w)), Ok(_)) if w < 0.0 || w > 10.0 => {
+        (_, None, false, false, Ok(Some(w)), Ok(_)) if w < 0.0 || w > 10.0 => {
             Err(anyhow!("Warmup must be between 0 and 10 seconds"))
         }
-        (maybe_file, None, false, false, verbose, Ok(warmup), Ok(device)) => {
-            snap(maybe_file.unwrap_or(DEFAULT_FILE), verbose, warmup, device)
+        (maybe_file, None, false, false, Ok(warmup), Ok(device)) => {
+            snap(maybe_file.unwrap_or(DEFAULT_FILE), warmup, device)
         }
-        (None, None, true, false, _, Ok(None), Ok(None)) => list_devices(),
-        (None, None, false, true, _, Ok(None), Ok(None)) => Ok(print_usage()),
-        (_, None, false, false, _, Err(_), _) => Err(anyhow!("Failed to parse warmup!")),
-        (_, None, false, false, _, Ok(_), Err(e)) => Err(anyhow!(e.to_string())),
-        (_, _, _, _, _, _, _) => Err(anyhow!("Invalid combination of arguments.")),
+        (None, None, true, false, Ok(None), Ok(None)) => list_devices(),
+        (None, None, false, true, Ok(None), Ok(None)) => Ok(print_usage()),
+        (_, None, false, false, Err(_), _) => Err(anyhow!("Failed to parse warmup!")),
+        (_, None, false, false, Ok(_), Err(e)) => Err(anyhow!(e.to_string())),
+        (_, _, _, _, _, _) => Err(anyhow!("Invalid combination of arguments.")),
     }
 }
 
@@ -64,16 +70,11 @@ fn list_devices() -> Result<()> {
     })
 }
 
-fn snap<S: Into<String>>(
-    filename: S,
-    verbose: bool,
-    warmup: Option<f32>,
-    device: Option<Device>,
-) -> Result<()> {
+fn snap<S: Into<String>>(filename: S, warmup: Option<f32>, device: Option<Device>) -> Result<()> {
     let camera = Camera::new(device, warmup)?;
     let filename = filename.into();
     let result = camera.snap(&filename);
-    if verbose {
+    if *VERBOSE.lock().unwrap() {
         println!(
             "Capturing image from device \"{}\"..................{}",
             camera.device, &filename
