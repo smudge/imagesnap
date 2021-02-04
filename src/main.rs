@@ -7,8 +7,18 @@ use anyhow::{anyhow, Result};
 use futures::executor::block_on;
 use getopts::Options;
 use imagesnap::{Camera, Device};
-use std::env;
+use std::io::Write;
 use std::sync::Mutex;
+use std::{env, io};
+
+macro_rules! log{
+    ($($arg:tt)*) => ({
+        if *VERBOSE.lock().unwrap() {
+            print!($($arg)*);
+            io::stdout().flush().unwrap();
+        }
+    })
+}
 
 static DEFAULT_FILE: &str = "snapshot.jpg";
 
@@ -73,12 +83,9 @@ fn list_devices() -> Result<()> {
 fn snap<S: Into<String>>(filename: S, warmup: Option<f32>, device: Option<Device>) -> Result<()> {
     let camera = Camera::new(device, warmup)?;
     let filename = filename.into();
+
+    log!("Capturing image from device \"{}\"...", camera.device);
     let result = camera.snap(&filename);
-    if *VERBOSE.lock().unwrap() {
-        println!(
-            "Capturing image from device \"{}\"..................{}",
-            camera.device, &filename
-        )
-    }
-    Ok(block_on(result)?)
+    block_on(result)?;
+    Ok(log!("...{}\n", &filename))
 }
