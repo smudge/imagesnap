@@ -4,12 +4,12 @@ extern crate anyhow;
 extern crate getopts;
 
 use anyhow::{anyhow, Result};
-use futures_lite::future;
+use futures_lite::*;
 use getopts::Options;
 use imagesnap::{Camera, Device};
 use std::io::Write;
-use std::sync::Mutex;
-use std::{env, io};
+use std::sync::{mpsc, Mutex};
+use std::{env, io, thread, time};
 
 macro_rules! log{
     ($($arg:tt)*) => ({
@@ -86,7 +86,17 @@ fn snap<S: Into<String>>(filename: S, warmup: Option<f32>, device: Option<Device
 
     log!("Capturing image from device \"{}\"...", camera.device);
     let result = camera.snap(&filename);
+    let (tx, rx) = mpsc::channel::<bool>();
+    let handler = thread::spawn(move || loop {
+        match rx.try_recv() {
+            Ok(_) => break,
+            Err(_) => log!("."),
+        }
+        thread::sleep(time::Duration::from_millis(100));
+    });
     future::block_on(result)?;
+    tx.send(true)?;
+    handler.join().unwrap();
 
-    Ok(log!("...{}\n", &filename))
+    Ok(log!("{}\n", &filename))
 }
