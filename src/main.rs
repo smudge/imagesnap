@@ -83,9 +83,18 @@ fn list_devices() -> Result<()> {
 fn snap<S: Into<String>>(filename: S, warmup: Option<f32>, device: Option<Device>) -> Result<()> {
     let camera = Camera::new(device, warmup)?;
     let filename = filename.into();
+    let f = filename.clone();
 
     log!("Capturing image from device \"{}\"...", camera.device);
-    let result = camera.snap(&filename);
+    loading_dots(move || Ok(future::block_on(camera.snap(&f))?))?;
+
+    Ok(log!("{}\n", &filename))
+}
+
+fn loading_dots<F>(f: F) -> Result<()>
+where
+    F: Fn() -> Result<()>,
+{
     let (tx, rx) = mpsc::channel::<bool>();
     let handler = thread::spawn(move || loop {
         match rx.try_recv() {
@@ -94,9 +103,7 @@ fn snap<S: Into<String>>(filename: S, warmup: Option<f32>, device: Option<Device
         }
         thread::sleep(time::Duration::from_millis(100));
     });
-    future::block_on(result)?;
+    f()?;
     tx.send(true)?;
-    handler.join().unwrap();
-
-    Ok(log!("{}\n", &filename))
+    Ok(handler.join().unwrap())
 }
