@@ -4,7 +4,7 @@ extern crate anyhow;
 extern crate getopts;
 
 use anyhow::{anyhow, Result};
-use futures::executor::block_on;
+use futures_lite::future;
 use getopts::Options;
 use imagesnap::{Camera, Device};
 use std::io::Write;
@@ -86,6 +86,7 @@ fn snap<S: Into<String>>(filename: S, warmup: Option<f32>, device: Option<Device
 
     log!("Capturing image from device \"{}\"...", camera.device);
     let result = camera.snap(&filename);
-    block_on(result)?;
+    future::block_on(result)?;
+
     Ok(log!("...{}\n", &filename))
 }

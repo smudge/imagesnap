@@ -14,7 +14,7 @@ lazy_static = "1.4"
 getopts = "0.2"
 anyhow = "1.0"
 thiserror = "1.0"
-futures = "0.3"
+futures-lite = "1.11"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
