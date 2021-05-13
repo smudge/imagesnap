@@ -54,6 +54,17 @@ $ imagesnap -d DV
 Capturing image from device "DV"..................snapshot.jpg
 ```
 
+Use the `-w` flag to specify a warmup period (default is 0.5), allowing the camera to perform light balancing and/or focus before taking a shot:
+
+```bash
+$ imagesnap -w 2.5
+Capturing image from device "iSight"...........................snapshot.jpg
+```
+
+Use the `-q` flag to silence the status and progress output.
+
+Lastly, run the command with `-h`/`--help` to see usage instructions.
+
 ### Rust API
 
 In addition to a CLI, `imagesnap` can be pulled-in as a dependency for other Rust crates:
