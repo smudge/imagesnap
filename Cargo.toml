@@ -7,7 +7,7 @@ categories = ["command-line-utilities", "os::macos-apis"]
 description = "A CLI for capturing images 📷 📸 🖼️"
 repository = "https://github.com/smudge/imagesnap"
 readme = "README.md"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 lazy_static = "1.4"
