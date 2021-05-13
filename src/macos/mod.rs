@@ -12,12 +12,12 @@ use std::os::raw::c_int;
 
 #[link(name = "AVFoundation", kind = "framework")]
 extern "C" {
-    pub(super) static AVVideoCodecKey: *mut NSString;
-    pub(super) static AVVideoCodecJPEG: *mut NSString;
-    pub(super) static AVMediaTypeVideo: *mut NSString;
+    pub(super) static AVVideoCodecKey: *mut Object;
+    pub(super) static AVVideoCodecJPEG: *mut Object;
+    pub(super) static AVMediaTypeVideo: *mut Object;
 
-    pub(super) static AVCaptureDeviceTypeExternalUnknown: *mut NSString;
-    pub(super) static AVCaptureDeviceTypeBuiltInWideAngleCamera: *mut NSString;
+    pub(super) static AVCaptureDeviceTypeExternalUnknown: *mut Object;
+    pub(super) static AVCaptureDeviceTypeBuiltInWideAngleCamera: *mut Object;
 }
 
 pub struct Client {}
@@ -39,8 +39,8 @@ impl Client {
         let discovery_session = class!(AVCaptureDeviceDiscoverySession);
         let device_types = unsafe {
             vec![
-                Id::from_ptr(AVCaptureDeviceTypeBuiltInWideAngleCamera),
-                Id::from_ptr(AVCaptureDeviceTypeExternalUnknown),
+                Id::from_ptr(AVCaptureDeviceTypeBuiltInWideAngleCamera as *mut NSString),
+                Id::from_ptr(AVCaptureDeviceTypeExternalUnknown as *mut NSString),
             ]
         };
         let device_types: Id<NSArray<NSString, Owned>> = NSArray::from_vec(device_types);
@@ -106,8 +106,8 @@ impl Client {
 
         let settings = unsafe {
             NSDictionary::from_keys_and_objects(
-                &[&*AVVideoCodecKey],
-                vec![Id::from_ptr(AVVideoCodecJPEG)],
+                &[&*(AVVideoCodecKey as *mut NSString)],
+                vec![Id::from_ptr(AVVideoCodecJPEG as *mut NSString)],
             )
         };
 
