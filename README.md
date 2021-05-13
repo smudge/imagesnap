@@ -32,11 +32,11 @@ $ imagesnap
 Capturing image from device "iSight"..................snapshot.jpg
 ```
 
-The filename can be changed by specifying an argument. The file extension will determine the image format:
+The filename can be changed by specifying an argument. Only JPG files are currently supported:
 
 ```bash
-$ imagesnap shot1.tif
-Capturing image from device "iSight"..................shot1.tif
+$ imagesnap shot1.jpg
+Capturing image from device "iSight"..................shot1.jpg
 ```
 
 Use the `-l` flag to list all available image capture devices:
@@ -62,13 +62,38 @@ In addition to a CLI, `imagesnap` can be pulled-in as a dependency for other Rus
 imagesnap = "0.0.1"
 ```
 
+To snap an image with the default camera, use `Camera::default`:
+
+```rust
+let camera = Camera::default();
+camera.snap("snapshot.jpg").await;
+```
+
+Note that `snap` is an `async` function.
+
+If more than one camera is attached, use `Camera::new` and specify a device:
+
+```rust
+let camera = Camera::new(Device::find("FaceTime"), None);
+```
+
+To discover all devices, use `Device::all()`.
+
+An optional warmup period may also be specificied (in seconds):
+
+```
+let camera = Camera::new(Device::default(), 1.5);
+```
+
+If left unspecified, it will default to 0.5 seconds.
+
 ## Todo:
 
 - [X] Basic functionality working (snap image to file)
 - [X] Add additional opts like 'quiet' and 'warmup'
 - [X] Get device selection working
-- [ ] Clean up code, work on generic lib interface
-- [ ] Update README with library usage
+- [X] Clean up code, work on generic lib interface
+- [X] Update README with library usage
 - [ ] Support additional file types? (png, tif, etc?)
 - [ ] Add Linux support (via `rscam`)
 - [ ] Add Windows support (via `escapi`)
