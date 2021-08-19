@@ -116,6 +116,8 @@ fi
 exit 0
 ```
 
+You may choose to change or remove `-w 3` (the warmup delay), depending on your default camera.
+
 ## Todo:
 
 - [X] Basic functionality working (snap image to file)
