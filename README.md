@@ -106,7 +106,7 @@ To automatically take a selfie with each git commit, create the following file a
 ```bash
 #!/bin/bash
 FILE="${HOME}/.gitshots/$(date +%s)"
-if [ ! -f "../../rebase-merge" ]; then
+if [ ! -d "$(git rev-parse --git-dir)/rebase-merge" ]; then
   git log HEAD~1..HEAD --pretty=format:'{"sha1": "%H", "author": "%aN", "authored": %at, "commiter": "%cN", "committed": %ct, "msg": "%s", "project:" "' > "$FILE.json"
   git rev-parse --show-toplevel | awk -F/ '{print $NF}' | tr -d '\n' >> "$FILE.json"
   echo -n '"}' >> "$FILE.json"
