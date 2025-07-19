@@ -15,6 +15,7 @@ pub enum ImagesnapError {
 }
 
 #[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
+#[cfg_attr(target_os = "linux", path = "linux/mod.rs")]
 mod os;
 
 pub struct Camera {
