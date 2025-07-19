@@ -1,6 +1,6 @@
 # imagesnap
 
-> A CLI for capturing images on macOS 📷 📸 🖼️
+> A CLI for capturing images on macOS **and Linux** 📷 📸 🖼️
 
 This crate also doubles as a Rust library. 🦀
 
@@ -17,6 +17,9 @@ brew install smudge/smudge/imagesnap
 [Set up Rust/Cargo](https://doc.rust-lang.org/book/ch01-01-installation.html)
 and install from crates.io by running:
 
+On Linux you will also need the `libv4l2` development headers
+(usually provided by the `libv4l-dev` package).
+
 ```
 cargo install imagesnap
 ```
@@ -25,12 +28,16 @@ cargo install imagesnap
 
 ### Command-Line Interface
 
-Run the command without any arguments to output `snapshot.jpg`, captured from the default camera:
+Run the command without any arguments to output `snapshot.jpg`,
+captured from the default camera:
 
 ```bash
 $ imagesnap
 Capturing image from device "iSight"..................snapshot.jpg
 ```
+
+On Linux the default device is usually `/dev/video0` and
+listed devices will appear under `/dev/video*`.
 
 The filename can be changed by specifying an argument. Only JPG files are currently supported:
 
@@ -126,7 +133,7 @@ You may choose to change or remove `-w 3` (the warmup delay), depending on your 
 - [X] Clean up code, work on generic lib interface
 - [X] Update README with library usage
 - [ ] Support additional file types? (png, tif, etc?)
-- [ ] Add Linux support (via `rscam`)
+- [X] Add Linux support (via `rscam`)
 - [ ] Add Windows support (via `escapi`)
 - [ ] Get STDOUT and pipe detection working (macOS/linux)
 
