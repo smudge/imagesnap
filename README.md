@@ -61,7 +61,7 @@ $ imagesnap -d DV
 Capturing image from device "DV"..................snapshot.jpg
 ```
 
-On macOS, a capture that does not complete within 30 seconds after the capture request fails instead of waiting indefinitely. This timeout is distinct from the warmup period.
+On macOS, a capture that does not complete within 30 seconds after the capture request fails instead of waiting indefinitely.
 
 Use the `-w` flag to specify a warmup period (default is 0.5), allowing the camera to perform light balancing and/or focus before taking a shot:
 
