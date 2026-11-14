@@ -82,3 +82,51 @@ fn help_takes_precedence_over_invalid_warmup() {
         .success()
         .stdout(predicate::str::contains("Usage"));
 }
+
+#[test]
+fn malformed_warmup_precedes_device_lookup() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["--warmup", "not-a-number", "--device", "not-a-camera"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to parse warmup"));
+}
+
+#[test]
+fn out_of_range_warmup_precedes_device_lookup() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["--warmup", "11", "--device", "not-a-camera"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Warmup must be between 0 and 10"));
+}
+
+#[test]
+fn non_finite_warmup_precedes_device_lookup() {
+    for warmup in ["NaN", "inf", "-inf", "-1"] {
+        let warmup_arg = format!("--warmup={warmup}");
+        Command::cargo_bin("imagesnap")
+            .unwrap()
+            .args(["--device", "not-a-camera", warmup_arg.as_str()])
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains("Warmup must be between 0 and 10"));
+    }
+}
+
+#[test]
+fn invalid_argument_shapes_skip_device_lookup() {
+    for args in [
+        &["--list", "--device", "not-a-camera"][..],
+        &["first.jpg", "second.jpg", "--device", "not-a-camera"][..],
+    ] {
+        Command::cargo_bin("imagesnap")
+            .unwrap()
+            .args(args)
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains("Invalid combination of arguments"));
+    }
+}
