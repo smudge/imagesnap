@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use futures_lite::*;
 use getopts::Options;
 use imagesnap::{Camera, Device};
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 use std::sync::{mpsc, Mutex};
 use std::{env, io, thread, time};
 
@@ -21,6 +21,15 @@ macro_rules! log{
 }
 
 static DEFAULT_FILE: &str = "snapshot.jpg";
+
+// Keep explicit filenames authoritative; only default to stdout when redirected.
+fn capture_destination<'a>(filename: Option<&'a str>, stdout_is_terminal: bool) -> &'a str {
+    match (filename, stdout_is_terminal) {
+        (Some(filename), _) => filename,
+        (None, true) => DEFAULT_FILE,
+        (None, false) => "-",
+    }
+}
 
 lazy_static! {
     static ref ARGS: Vec<String> = env::args().collect();
@@ -44,8 +53,12 @@ fn main() -> Result<()> {
     }
     drop(opts);
 
+    let destination = capture_destination(
+        matches.free.first().map(String::as_str),
+        io::stdout().is_terminal(),
+    );
     let mut verbose = VERBOSE.lock().unwrap();
-    *verbose = !matches.opt_present("q") && matches.free.as_slice() != ["-"];
+    *verbose = !matches.opt_present("q") && destination != "-";
     drop(verbose);
 
     match (
@@ -63,7 +76,7 @@ fn main() -> Result<()> {
             snap(filename.as_str(), warmup, device.map(Device::find).transpose()?)
         }
         ([], false, Ok(warmup), device) => {
-            snap(DEFAULT_FILE, warmup, device.map(Device::find).transpose()?)
+            snap(destination, warmup, device.map(Device::find).transpose()?)
         }
         _ => Err(anyhow!("Invalid combination of arguments.")),
     }
@@ -74,7 +87,7 @@ fn print_usage() {
     println!("  {}\n", env!("CARGO_PKG_DESCRIPTION"));
     println!("Usage:\n  {} [<OPTIONS>] [FILENAME]\n", &ARGS[0]);
     println!("FILENAME:");
-    print!("  Defaults to '{}' (use '-' for JPEG on stdout)", DEFAULT_FILE);
+    print!("  Defaults to '{}' in a terminal, stdout when piped (use '-' explicitly for stdout)", DEFAULT_FILE);
     println!("{}", OPTS.lock().unwrap().usage(""));
 }
 
@@ -118,6 +131,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn selects_stdout_only_when_no_filename_is_given_and_stdout_is_redirected() {
+        assert_eq!(capture_destination(None, true), DEFAULT_FILE);
+        assert_eq!(capture_destination(None, false), "-");
+        assert_eq!(capture_destination(Some("photo.jpg"), false), "photo.jpg");
+        assert_eq!(capture_destination(Some("photo.jpg"), true), "photo.jpg");
+        assert_eq!(capture_destination(Some("-"), true), "-");
+    }
 
     #[test]
     fn loading_dots_propagates_capture_error() {
