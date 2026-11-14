@@ -103,7 +103,26 @@ where
         }
         thread::sleep(time::Duration::from_millis(100));
     });
-    f()?;
-    tx.send(true)?;
-    Ok(handler.join().unwrap())
+    let result = f();
+    let _ = tx.send(true);
+    handler
+        .join()
+        .map_err(|_| anyhow!("Progress thread panicked"))?;
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn loading_dots_propagates_capture_error() {
+        let result = loading_dots(|| Err(anyhow!("capture failed")));
+        assert_eq!(result.unwrap_err().to_string(), "capture failed");
+    }
+
+    #[test]
+    fn loading_dots_propagates_success() {
+        assert!(loading_dots(|| Ok(())).is_ok());
+    }
 }
