@@ -141,3 +141,24 @@ fn stdout_mode_still_validates_warmup_without_camera_access() {
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::contains("Failed to parse warmup"));
 }
+
+#[test]
+fn noninteractive_capture_errors_never_write_progress_to_stdout() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["--warmup", "invalid"])
+        .assert()
+        .failure()
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("Failed to parse warmup"));
+}
+
+#[test]
+fn explicit_filename_errors_do_not_attempt_capture() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["--warmup", "invalid", "photo.jpg"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to parse warmup"));
+}
