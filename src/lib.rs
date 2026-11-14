@@ -10,8 +10,8 @@ pub enum ImagesnapError {
     NoMatchingDevices,
     #[error("Error discovering devices!")]
     DeviceLookupError,
-    #[error("Error capturing image!")]
-    CaptureError,
+    #[error("Error capturing image: {0}")]
+    CaptureError(String),
 }
 
 #[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
@@ -83,13 +83,19 @@ impl Camera {
         let filename = filename.into();
         os::Client::capture(&self.device.name, &filename, self.warmup)
             .await
-            .map_err(|_| ImagesnapError::CaptureError)
+            .map_err(ImagesnapError::CaptureError)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn capture_error_preserves_backend_detail() {
+        let error = ImagesnapError::CaptureError("Capture timed out after 30 seconds".into());
+        assert!(error.to_string().contains("Capture timed out after 30 seconds"));
+    }
 
     #[test]
     fn explicit_device_does_not_resolve_default() {
