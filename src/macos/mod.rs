@@ -9,6 +9,7 @@ use objc::{class, msg_send, sel, sel_impl};
 use objc_foundation::*;
 use objc_id::{Id, Owned};
 use std::os::raw::c_int;
+use std::io::Write;
 
 #[link(name = "AVFoundation", kind = "framework")]
 extern "C" {
@@ -18,6 +19,10 @@ extern "C" {
 
     pub(super) static AVCaptureDeviceTypeExternalUnknown: *mut Object;
     pub(super) static AVCaptureDeviceTypeBuiltInWideAngleCamera: *mut Object;
+}
+
+fn write_jpeg<W: Write>(writer: &mut W, bytes: &[u8]) -> Result<(), String> {
+    writer.write_all(bytes).map_err(|e| e.to_string())
 }
 
 fn capture_result(has_error: bool, has_image_data: bool, wrote_file: bool) -> Result<(), String> {
@@ -144,9 +149,20 @@ impl Client {
                 },
                 _ => std::ptr::null_mut(),
             };
-            let wrote_file = match (error.is_null(), image_data.is_null()) {
-                (true, false) => {
-                    let path = NSString::from_str(&filename);
+            let wrote_file = match (error.is_null(), image_data.is_null(), filename.as_str()) {
+                (true, false, "-") => {
+                    let len: usize = unsafe { msg_send![image_data, length] };
+                    let ptr: *const u8 = unsafe { msg_send![image_data, bytes] };
+                    match (ptr.is_null(), len) {
+                        (true, _) | (_, 0) => false,
+                        (false, _) => {
+                            let jpeg = unsafe { std::slice::from_raw_parts(ptr, len) };
+                            write_jpeg(&mut std::io::stdout().lock(), jpeg).is_ok()
+                        }
+                    }
+                }
+                (true, false, path) => {
+                    let path = NSString::from_str(path);
                     let written: BOOL =
                         unsafe { msg_send![image_data, writeToFile:path atomically:YES] };
                     written == YES
@@ -173,9 +189,17 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::{capture_result, receive_capture};
+    use super::{capture_result, receive_capture, write_jpeg};
     use std::sync::mpsc;
     use std::cell::Cell;
+
+    #[test]
+    fn writes_jpeg_bytes_without_text_prefix() {
+        let bytes = [0xff, 0xd8, 0x00, 0xff, 0xd9];
+        let mut output = Vec::new();
+        write_jpeg(&mut output, &bytes).unwrap();
+        assert_eq!(output, bytes);
+    }
 
     #[test]
     fn capture_callback_outcomes() {

@@ -1,6 +1,20 @@
 use std::fs;
 use std::io::Write;
 
+fn write_jpeg<W: Write>(writer: &mut W, bytes: &[u8]) -> Result<(), String> {
+    writer.write_all(bytes).map_err(|e| e.to_string())
+}
+
+fn write_frame(filename: &str, frame: &[u8]) -> Result<(), String> {
+    match filename {
+        "-" => write_jpeg(&mut std::io::stdout().lock(), frame),
+        path => {
+            let mut file = fs::File::create(path).map_err(|e| e.to_string())?;
+            write_jpeg(&mut file, frame)
+        }
+    }
+}
+
 pub struct Client;
 
 impl Client {
@@ -42,8 +56,32 @@ impl Client {
             .map_err(|e| e.to_string())?;
         std::thread::sleep(std::time::Duration::from_secs_f32(warmup));
         let frame = camera.capture().map_err(|e| e.to_string())?;
-        let mut file = fs::File::create(&filename).map_err(|e| e.to_string())?;
-        file.write_all(&frame[..]).map_err(|e| e.to_string())?;
+        write_frame(&filename, &frame)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::write_jpeg;
+
+    #[test]
+    fn writes_jpeg_bytes_without_text_prefix() {
+        let bytes = [0xff, 0xd8, 0x00, 0xff, 0xd9];
+        let mut output = Vec::new();
+        write_jpeg(&mut output, &bytes).unwrap();
+        assert_eq!(output, bytes);
+    }
+
+    #[test]
+    fn reports_write_failures() {
+        struct Failure;
+        impl std::io::Write for Failure {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "closed"))
+            }
+            fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+        }
+        assert!(write_jpeg(&mut Failure, b"jpeg").is_err());
     }
 }
