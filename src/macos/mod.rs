@@ -29,6 +29,19 @@ fn capture_result(has_error: bool, has_image_data: bool, wrote_file: bool) -> Re
     }
 }
 
+// Keep callback delivery and capture-session cleanup separate from AVFoundation.
+fn receive_capture<F: FnOnce()>(
+    receiver: std::sync::mpsc::Receiver<Result<(), String>>,
+    cleanup: F,
+) -> Result<(), String> {
+    let outcome = receiver
+        .recv()
+        .map_err(|_| "Capture callback was dropped".to_string())
+        .and_then(|result| result);
+    cleanup();
+    outcome
+}
+
 pub struct Client {}
 
 impl Client {
@@ -152,16 +165,17 @@ impl Client {
         unsafe {
             msg_send![avcsio, captureStillImageAsynchronouslyFromConnection:connection completionHandler:handler.copy()]
         }
-        let result = rx.recv().map_err(|_| "Capture callback was dropped".to_string());
-
-        unsafe { msg_send![session, stopRunning] }
-        result?
+        receive_capture(rx, || {
+            unsafe { msg_send![session, stopRunning] }
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::capture_result;
+    use super::{capture_result, receive_capture};
+    use std::sync::mpsc;
+    use std::cell::Cell;
 
     #[test]
     fn capture_callback_outcomes() {
@@ -179,4 +193,26 @@ mod tests {
             "Could not write captured image"
         );
     }
+    #[test]
+    fn callback_success_and_failure_both_clean_up() {
+        for delivered in [Ok(()), Err("capture failed".to_string())] {
+            let (sender, receiver) = mpsc::channel();
+            sender.send(delivered.clone()).unwrap();
+            let called = Cell::new(false);
+            let outcome = receive_capture(receiver, || called.set(true));
+            assert_eq!(outcome, delivered);
+            assert!(called.get());
+        }
+    }
+
+    #[test]
+    fn dropped_callback_still_cleans_up() {
+        let (sender, receiver) = mpsc::channel::<Result<(), String>>();
+        drop(sender);
+        let called = Cell::new(false);
+        let outcome = receive_capture(receiver, || called.set(true));
+        assert_eq!(outcome.unwrap_err(), "Capture callback was dropped");
+        assert!(called.get());
+    }
+
 }
