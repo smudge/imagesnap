@@ -64,11 +64,21 @@ fn negative_warmup_errors_without_a_camera() {
 }
 
 #[test]
-fn incompatible_help_and_list_flags_error() {
+fn help_takes_precedence_over_other_options() {
     Command::cargo_bin("imagesnap")
         .unwrap()
-        .args(&["-h", "-l"])
+        .args(&["-h", "-l", "--device", "nonexistent-camera"])
         .assert()
-        .failure()
-        .stderr(predicate::str::contains("Invalid combination of arguments"));
+        .success()
+        .stdout(predicate::str::contains("Usage"));
+}
+
+#[test]
+fn help_takes_precedence_over_invalid_warmup() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(&["--help", "--warmup", "not-a-number"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Usage"));
 }
