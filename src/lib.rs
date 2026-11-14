@@ -64,9 +64,13 @@ impl Device {
     }
 }
 
+fn select_device<F: FnOnce() -> Device>(device: Option<Device>, default: F) -> Device {
+    device.unwrap_or_else(default)
+}
+
 impl Camera {
     pub fn new(device: Option<Device>, warmup: Option<f32>) -> Result<Camera, ImagesnapError> {
-        let device = device.unwrap_or(Device::default());
+        let device = select_device(device, Device::default);
         let warmup = warmup.unwrap_or(0.5);
         Ok(Camera { device, warmup })
     }
@@ -80,5 +84,27 @@ impl Camera {
         os::Client::capture(&self.device.name, &filename, self.warmup)
             .await
             .map_err(|_| ImagesnapError::CaptureError)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn explicit_device_does_not_resolve_default() {
+        let selected = Device {
+            name: "chosen camera".to_string(),
+        };
+        let device = select_device(Some(selected), || panic!("Default device should not be queried"));
+        assert_eq!(device.name, "chosen camera");
+    }
+
+    #[test]
+    fn missing_device_uses_default_provider() {
+        let device = select_device(None, || Device {
+            name: "default camera".to_string(),
+        });
+        assert_eq!(device.name, "default camera");
     }
 }
