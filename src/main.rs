@@ -37,6 +37,11 @@ fn main() -> Result<()> {
     opts.optflag("h", "help", "This help message");
 
     let matches = opts.parse(&ARGS[1..])?;
+    if matches.opt_present("h") {
+        drop(opts);
+        print_usage();
+        return Ok(());
+    }
     drop(opts);
 
     let mut verbose = VERBOSE.lock().unwrap();
@@ -58,7 +63,6 @@ fn main() -> Result<()> {
             snap(maybe_file.unwrap_or(DEFAULT_FILE), warmup, device)
         }
         (None, None, true, false, Ok(None), Ok(None)) => list_devices(),
-        (None, None, false, true, Ok(None), Ok(None)) => Ok(print_usage()),
         (_, None, false, false, Err(_), _) => Err(anyhow!("Failed to parse warmup!")),
         (_, None, false, false, Ok(_), Err(e)) => Err(anyhow!(e.to_string())),
         (_, _, _, _, _, _) => Err(anyhow!("Invalid combination of arguments.")),
