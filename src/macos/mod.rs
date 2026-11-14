@@ -10,6 +10,7 @@ use objc_foundation::*;
 use objc_id::{Id, Owned};
 use std::os::raw::c_int;
 use std::io::Write;
+use std::time::Duration;
 
 #[link(name = "AVFoundation", kind = "framework")]
 extern "C" {
@@ -34,14 +35,21 @@ fn capture_result(has_error: bool, has_image_data: bool, wrote_file: bool) -> Re
     }
 }
 
-// Keep callback delivery and capture-session cleanup separate from AVFoundation.
+// Leave room for camera startup and exposure without hanging unattended commands.
+const CAPTURE_TIMEOUT: Duration = Duration::from_secs(30);
+
 fn receive_capture<F: FnOnce()>(
     receiver: std::sync::mpsc::Receiver<Result<(), String>>,
+    timeout: Duration,
     cleanup: F,
 ) -> Result<(), String> {
-    let outcome = receiver
-        .recv()
-        .map_err(|_| "Capture callback was dropped".to_string())
+    let outcome = receiver.recv_timeout(timeout)
+        .map_err(|error| match error {
+            std::sync::mpsc::RecvTimeoutError::Timeout =>
+                format!("Capture timed out after {} seconds", timeout.as_secs()),
+            std::sync::mpsc::RecvTimeoutError::Disconnected =>
+                "Capture callback was dropped".to_string(),
+        })
         .and_then(|result| result);
     cleanup();
     outcome
@@ -181,7 +189,7 @@ impl Client {
         unsafe {
             msg_send![avcsio, captureStillImageAsynchronouslyFromConnection:connection completionHandler:handler.copy()]
         }
-        receive_capture(rx, || {
+        receive_capture(rx, CAPTURE_TIMEOUT, || {
             unsafe { msg_send![session, stopRunning] }
         })
     }
@@ -192,6 +200,7 @@ mod tests {
     use super::{capture_result, receive_capture, write_jpeg};
     use std::sync::mpsc;
     use std::cell::Cell;
+    use std::time::Duration;
 
     #[test]
     fn writes_jpeg_bytes_without_text_prefix() {
@@ -223,7 +232,7 @@ mod tests {
             let (sender, receiver) = mpsc::channel();
             sender.send(delivered.clone()).unwrap();
             let called = Cell::new(false);
-            let outcome = receive_capture(receiver, || called.set(true));
+            let outcome = receive_capture(receiver, Duration::from_secs(1), || called.set(true));
             assert_eq!(outcome, delivered);
             assert!(called.get());
         }
@@ -234,9 +243,28 @@ mod tests {
         let (sender, receiver) = mpsc::channel::<Result<(), String>>();
         drop(sender);
         let called = Cell::new(false);
-        let outcome = receive_capture(receiver, || called.set(true));
+        let outcome = receive_capture(receiver, Duration::from_secs(1), || called.set(true));
         assert_eq!(outcome.unwrap_err(), "Capture callback was dropped");
         assert!(called.get());
+    }
+
+    #[test]
+    fn stalled_capture_times_out_and_stops_session() {
+        let (sender, receiver) = mpsc::channel::<Result<(), String>>();
+        let stopped = Cell::new(false);
+        let result = receive_capture(receiver, Duration::from_millis(1), || stopped.set(true));
+        assert!(result.unwrap_err().contains("Capture timed out"));
+        assert!(stopped.get());
+        drop(sender);
+    }
+
+    #[test]
+    fn completed_capture_does_not_wait_for_timeout() {
+        let (sender, receiver) = mpsc::channel();
+        sender.send(Ok(())).unwrap();
+        let stopped = Cell::new(false);
+        assert!(receive_capture(receiver, Duration::from_secs(30), || stopped.set(true)).is_ok());
+        assert!(stopped.get());
     }
 
 }
