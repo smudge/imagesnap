@@ -153,8 +153,13 @@ impl Client {
                 (true, false, "-") => {
                     let len: usize = unsafe { msg_send![image_data, length] };
                     let ptr: *const u8 = unsafe { msg_send![image_data, bytes] };
-                    let jpeg = unsafe { std::slice::from_raw_parts(ptr, len) };
-                    write_jpeg(&mut std::io::stdout().lock(), jpeg).is_ok()
+                    match (ptr.is_null(), len) {
+                        (true, _) | (_, 0) => false,
+                        (false, _) => {
+                            let jpeg = unsafe { std::slice::from_raw_parts(ptr, len) };
+                            write_jpeg(&mut std::io::stdout().lock(), jpeg).is_ok()
+                        }
+                    }
                 }
                 (true, false, path) => {
                     let path = NSString::from_str(path);
