@@ -68,6 +68,14 @@ $ imagesnap -w 2.5
 Capturing image from device "iSight"...........................snapshot.jpg
 ```
 
+Pass `-` as the filename to write JPEG bytes to stdout, for example:
+
+```bash
+imagesnap - > snapshot.jpg
+```
+
+When writing to stdout, progress and status messages are suppressed to keep the JPEG stream clean.
+
 Use the `-q` flag to silence the status and progress output.
 
 Lastly, run the command with `-h`/`--help` to see usage instructions.
@@ -135,7 +143,8 @@ You may choose to change or remove `-w 3` (the warmup delay), depending on your 
 - [ ] Support additional file types? (png, tif, etc?)
 - [X] Add Linux support (via `rscam`)
 - [ ] Add Windows support (via `escapi`)
-- [ ] Get STDOUT and pipe detection working (macOS/linux)
+- [X] Write JPEG to stdout with `-` (macOS/Linux)
+- [ ] Automatically select stdout when piped
 
 ## Thanks To:
 

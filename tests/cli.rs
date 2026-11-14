@@ -130,3 +130,14 @@ fn invalid_argument_shapes_skip_device_lookup() {
             .stderr(predicate::str::contains("Invalid combination of arguments"));
     }
 }
+
+#[test]
+fn stdout_mode_still_validates_warmup_without_camera_access() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["-w", "invalid", "-"])
+        .assert()
+        .failure()
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("Failed to parse warmup"));
+}

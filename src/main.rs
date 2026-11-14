@@ -45,7 +45,7 @@ fn main() -> Result<()> {
     drop(opts);
 
     let mut verbose = VERBOSE.lock().unwrap();
-    *verbose = !matches.opt_present("q");
+    *verbose = !matches.opt_present("q") && matches.free.as_slice() != ["-"];
     drop(verbose);
 
     match (
@@ -74,7 +74,7 @@ fn print_usage() {
     println!("  {}\n", env!("CARGO_PKG_DESCRIPTION"));
     println!("Usage:\n  {} [<OPTIONS>] [FILENAME]\n", &ARGS[0]);
     println!("FILENAME:");
-    print!("  Defaults to '{}' (only JPG supported)", DEFAULT_FILE);
+    print!("  Defaults to '{}' (use '-' for JPEG on stdout)", DEFAULT_FILE);
     println!("{}", OPTS.lock().unwrap().usage(""));
 }
 
