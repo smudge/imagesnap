@@ -20,6 +20,15 @@ extern "C" {
     pub(super) static AVCaptureDeviceTypeBuiltInWideAngleCamera: *mut Object;
 }
 
+fn capture_result(has_error: bool, has_image_data: bool, wrote_file: bool) -> Result<(), String> {
+    match (has_error, has_image_data, wrote_file) {
+        (true, _, _) => Err("Camera reported a capture error".into()),
+        (_, false, _) => Err("Camera returned no JPEG data".into()),
+        (_, _, false) => Err("Could not write captured image".into()),
+        _ => Ok(()),
+    }
+}
+
 pub struct Client {}
 
 impl Client {
@@ -115,12 +124,24 @@ impl Client {
         unsafe { msg_send![session, addOutput: avcsio] }
 
         let (tx, rx) = std::sync::mpsc::channel();
-        let handler = ConcreteBlock::new(move |photo: *const Object, _error: *const Object| {
-            let image_data: *mut NSData =
-                unsafe { msg_send![av_capture_class, jpegStillImageNSDataRepresentation: photo] };
-            let filename = NSString::from_str(&filename);
-            unsafe { msg_send![image_data, writeToFile:filename atomically:YES] }
-            tx.send("success").unwrap();
+        let handler = ConcreteBlock::new(move |photo: *const Object, error: *const Object| {
+            let image_data: *mut NSData = match (error.is_null(), photo.is_null()) {
+                (true, false) => unsafe {
+                    msg_send![av_capture_class, jpegStillImageNSDataRepresentation: photo]
+                },
+                _ => std::ptr::null_mut(),
+            };
+            let wrote_file = match (error.is_null(), image_data.is_null()) {
+                (true, false) => {
+                    let path = NSString::from_str(&filename);
+                    let written: BOOL =
+                        unsafe { msg_send![image_data, writeToFile:path atomically:YES] };
+                    written == YES
+                }
+                _ => false,
+            };
+            let result = capture_result(!error.is_null(), !image_data.is_null(), wrote_file);
+            let _ = tx.send(result);
         });
 
         let connections: *mut Object = unsafe { msg_send![avcsio, connections] };
@@ -131,9 +152,31 @@ impl Client {
         unsafe {
             msg_send![avcsio, captureStillImageAsynchronouslyFromConnection:connection completionHandler:handler.copy()]
         }
-        rx.recv().unwrap();
+        let result = rx.recv().map_err(|_| "Capture callback was dropped".to_string());
 
         unsafe { msg_send![session, stopRunning] }
-        Ok(())
+        result?
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::capture_result;
+
+    #[test]
+    fn capture_callback_outcomes() {
+        assert!(capture_result(false, true, true).is_ok());
+        assert_eq!(
+            capture_result(true, false, false).unwrap_err(),
+            "Camera reported a capture error"
+        );
+        assert_eq!(
+            capture_result(false, false, false).unwrap_err(),
+            "Camera returned no JPEG data"
+        );
+        assert_eq!(
+            capture_result(false, true, false).unwrap_err(),
+            "Could not write captured image"
+        );
     }
 }
