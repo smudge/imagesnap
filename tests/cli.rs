@@ -82,3 +82,23 @@ fn help_takes_precedence_over_invalid_warmup() {
         .success()
         .stdout(predicate::str::contains("Usage"));
 }
+
+#[test]
+fn malformed_warmup_precedes_device_lookup() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["--warmup", "not-a-number", "--device", "not-a-camera"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to parse warmup"));
+}
+
+#[test]
+fn out_of_range_warmup_precedes_device_lookup() {
+    Command::cargo_bin("imagesnap")
+        .unwrap()
+        .args(["--warmup", "11", "--device", "not-a-camera"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Warmup must be between 0 and 10"));
+}

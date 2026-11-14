@@ -49,23 +49,23 @@ fn main() -> Result<()> {
     drop(verbose);
 
     match (
-        matches.free.get(0).map(|s| s.as_str()),
-        matches.free.get(1),
+        matches.free.as_slice(),
         matches.opt_present("l"),
-        matches.opt_present("h"),
         matches.opt_str("w").map(|s| s.parse::<f32>()).transpose(),
-        matches.opt_str("d").map(|d| Device::find(d)).transpose(),
+        matches.opt_str("d"),
     ) {
-        (_, None, false, false, Ok(Some(w)), Ok(_)) if !w.is_finite() || !(0.0..=10.0).contains(&w) => {
+        (_, _, Err(_), _) => Err(anyhow!("Failed to parse warmup!")),
+        (_, _, Ok(Some(w)), _) if !w.is_finite() || !(0.0..=10.0).contains(&w) => {
             Err(anyhow!("Warmup must be between 0 and 10 seconds"))
         }
-        (maybe_file, None, false, false, Ok(warmup), Ok(device)) => {
-            snap(maybe_file.unwrap_or(DEFAULT_FILE), warmup, device)
+        ([], true, Ok(None), None) => list_devices(),
+        ([filename], false, Ok(warmup), device) => {
+            snap(filename.as_str(), warmup, device.map(Device::find).transpose()?)
         }
-        (None, None, true, false, Ok(None), Ok(None)) => list_devices(),
-        (_, None, false, false, Err(_), _) => Err(anyhow!("Failed to parse warmup!")),
-        (_, None, false, false, Ok(_), Err(e)) => Err(anyhow!(e.to_string())),
-        (_, _, _, _, _, _) => Err(anyhow!("Invalid combination of arguments.")),
+        ([], false, Ok(warmup), device) => {
+            snap(DEFAULT_FILE, warmup, device.map(Device::find).transpose()?)
+        }
+        _ => Err(anyhow!("Invalid combination of arguments.")),
     }
 }
 
