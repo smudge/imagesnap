@@ -51,7 +51,7 @@ fn main() -> Result<()> {
         matches.opt_str("w").map(|s| s.parse()).transpose(),
         matches.opt_str("d").map(|d| Device::find(d)).transpose(),
     ) {
-        (_, None, false, false, Ok(Some(w)), Ok(_)) if w < 0.0 || w > 10.0 => {
+        (_, None, false, false, Ok(Some(w)), Ok(_)) if !w.is_finite() || !(0.0..=10.0).contains(&w) => {
             Err(anyhow!("Warmup must be between 0 and 10 seconds"))
         }
         (maybe_file, None, false, false, Ok(warmup), Ok(device)) => {
