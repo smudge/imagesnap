@@ -91,30 +91,22 @@ In addition to a CLI, `imagesnap` can be pulled-in as a dependency for other Rus
 imagesnap = "0.0.1"
 ```
 
-To snap an image with the default camera, use `Camera::default`:
+To capture an image with the default camera:
 
 ```rust
-let camera = Camera::default();
-camera.snap("snapshot.jpg").await;
+let camera = imagesnap::Camera::default()?;
+camera.snap("snapshot.jpg").await?;
 ```
 
-Note that `snap` is an `async` function.
-
-If more than one camera is attached, use `Camera::new` and specify a device:
+`snap` is asynchronous. To select a camera or set a warmup period (in seconds):
 
 ```rust
-let camera = Camera::new(Device::find("FaceTime"), None);
+let device = imagesnap::Device::find("FaceTime")?;
+let camera = imagesnap::Camera::new(Some(device), Some(1.5))?;
+camera.snap("snapshot.jpg").await?;
 ```
 
-To discover all devices, use `Device::all()`.
-
-An optional warmup period may also be specificied (in seconds):
-
-```
-let camera = Camera::new(Device::default(), 1.5);
-```
-
-If left unspecified, it will default to 0.5 seconds.
+Use `Device::all()` to discover cameras. The default warmup is 0.5 seconds.
 
 ### Bonus: a git `post-commit` hook
 
