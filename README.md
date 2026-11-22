@@ -1,5 +1,8 @@
 # imagesnap
 
+[![CI](https://github.com/smudge/imagesnap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smudge/imagesnap/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/crates/d/imagesnap)](https://crates.io/crates/imagesnap)
+
 > A CLI for capturing images on macOS **and Linux** 📷 📸 🖼️
 
 This crate also doubles as a Rust library. 🦀
@@ -11,6 +14,10 @@ This crate also doubles as a Rust library. 🦀
 ```
 brew install smudge/smudge/imagesnap
 ```
+
+### via prebuilt binaries
+
+Download an archive from the [latest GitHub release](https://github.com/smudge/imagesnap/releases/latest) for Apple Silicon (`aarch64-apple-darwin`), Intel macOS (`x86_64-apple-darwin`), or Linux (`x86_64`/`aarch64-unknown-linux-gnu`). Extract `imagesnap` and put it on your `PATH`. Linux binaries require `libv4l2` at runtime (typically the `libv4l-0` package).
 
 ### via Cargo
 
@@ -145,6 +152,10 @@ You may choose to change or remove `-w 3` (the warmup delay), depending on your 
 * Robert Harder for the original [imagesnap](https://github.com/rharder/imagesnap) CLI
 * The maintainers of the Rust [objc crate](https://github.com/SSheldon/rust-objc)
 * Carol Nichols and Steve Klabnik for the [official book](https://doc.rust-lang.org/book/) on Rust
+
+## Releasing
+
+Bump the version in `Cargo.toml` and update `Cargo.lock`, then commit to `main`. Run `cargo release --dry-run` and `cargo release` locally to publish to crates.io and push the `v<version>` tag. GitHub Actions then builds release archives and creates a draft GitHub release with checksums; review and publish that draft separately.
 
 ## Contributing
 
