@@ -14,7 +14,7 @@ lazy_static = "1.4"
 getopts = "0.2"
 anyhow = "1.0"
 thiserror = "1.0"
-futures-lite = "1.11"
+futures-lite = "2.6"
 
 [dev-dependencies]
 assert_cmd = "2"
