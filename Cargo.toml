@@ -31,3 +31,6 @@ rscam = "0.5"
 
 [profile.dev]
 split-debuginfo = "unpacked"
+
+[workspace]
+members = ["xtask"]
